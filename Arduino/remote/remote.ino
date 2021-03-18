@@ -3,6 +3,7 @@
  */
 #include <TimerOne.h>
 
+
 struct __attribute__((__packed__)) State {
   int8_t      Demodulator             = 0; //Demodulator type,        Enum:
   //    DemodulatorNone = 0,
@@ -50,15 +51,17 @@ struct __attribute__((__packed__)) State {
   bool        AudioMute               = false;
   bool        BiasTEnable             = false;
   //non essential params
-  int    Step                         = 0;
-  long int    fingerprint;
+  int         Step                    = 16;         //trailing four bits are reserved for aux and does not mapped to step place highlighter
+  bool        VfoMode                 = false;      //
+  
+  long int    fingerprint;                          //hash-like substitute. @ToDo: rework me later
 } state;
 
 //LED params
 // pin 11 of 74HC595 (SHCP)
-const int bit_clock_pin = 3; //SCLK
+const int bit_clock_pin = 14; //SCLK
 // pin 12 of 74HC595 (STCP)
-const int digit_clock_pin = 4; //LOAD/latch
+const int digit_clock_pin = 15; //LOAD/latch
 // pin 14 of 74HC595 (DS)
 const int data_pin = 2; //SDI pin
 
@@ -96,7 +99,7 @@ void setup() {
 
   //Timer interrupt for display freq;
   Timer1.initialize(1000000); //timing for 1s
-  Timer1.attachInterrupt(showCenterFrequencyLED);
+  Timer1.attachInterrupt(fillRegisters);
 }
 
 void loop() {
@@ -108,6 +111,9 @@ void loop() {
   updateCenterFrequency();
   updateFilterBandwidth();
   updateStep();
+  updateMute();
+  updateBiasT();
+  updateMode();
 
   echoStruct();
 
@@ -174,7 +180,8 @@ void echoStruct() {
 //  Serial.print(state.BiasTEnable);
 //  Serial.print("\t");
 
-  Serial.print(state.Step, BIN);
+//  print_binary(state.Step, 16);
+//  Serial.print(state.Step, BIN);
   Serial.print("\t");
   
 //  Serial.print(state.fingerprint);
@@ -190,15 +197,38 @@ void parseStruct(String string) {
          &state.FilterBandwidth,
          &state.fingerprint);
 }
-
-void showCenterFrequencyLED() {
+  
+void fillRegisters() {
   int array[12];
+  int temporaryStep = state.Step;
   long int number = state.CenterFrequency;
 
   digitalWrite(digit_clock_pin, LOW);
+
+  //highlight mute button
+  if(state.AudioMute){
+    bitSet(temporaryStep, 3);
+  }else{
+    bitClear(temporaryStep, 3);
+  }
+
+  //highlight bias-T button
+  if(state.BiasTEnable){
+    bitSet(temporaryStep, 2);
+  }else{
+    bitClear(temporaryStep, 2);
+  }
+
+  //highlight VFO Mode button
+  if(state.VfoMode){
+    bitSet(temporaryStep, 1);  
+  }else{
+    bitClear(temporaryStep, 1);
+  }
   
-  shiftOut(data_pin, bit_clock_pin, LSBFIRST, state.Step);
-  shiftOut(data_pin, bit_clock_pin, LSBFIRST, state.Step >> 8);
+  //highlight active step place and buttons
+  shiftOut(data_pin, bit_clock_pin, LSBFIRST, temporaryStep);
+  shiftOut(data_pin, bit_clock_pin, LSBFIRST, temporaryStep >> 8);
   
   for (int i = 12; i > 0; i--) {
     byte pattern = digit_pattern[number % 10];
@@ -206,7 +236,8 @@ void showCenterFrequencyLED() {
     array[i] = number % 10;
     number /= 10;
   }
-  
+  print_binary(temporaryStep, 16);
+
   digitalWrite(digit_clock_pin, HIGH);
 }
 
@@ -233,9 +264,11 @@ void updateStep() {
   if(state.Step == 0)
   {
     state.Step = 16; //4 bits reserved for buttons
-  }
+  }  
 }
 
+void stepUp(){}
+void stepDown(){}
 void updateVfoFrequency() {
   if (state.VfoFrequency >= 3654320 && state.VfoFrequency <= 456300000) // ~7,6 MHz <= VFO <= 443,3 MHz
   {
@@ -245,6 +278,33 @@ void updateVfoFrequency() {
   }
 }
 
+void updateMute(){
+  //dummy code
+  if(state.CenterFrequency%2==0){
+    state.AudioMute = true;
+  } else {
+    state.AudioMute = false;
+  }  
+}
+
+void updateBiasT(){
+  //dummy code
+  if(state.CenterFrequency%2==1){
+    state.BiasTEnable = true;
+  }else{
+    state.BiasTEnable = false;
+  }
+}
+
+void updateMode(){
+  //dummy code
+  if(state.CenterFrequency%3==0){
+    state.VfoMode = true;
+  }else{
+    state.VfoMode = false;
+  }
+}
+  
 void updateFilterBandwidth() {
   if (state.FilterBandwidth >= 3300 && state.FilterBandwidth <= 20000) // 4,3 KHz <= FilterBandwidth <= 20 KHz
   {
@@ -252,4 +312,36 @@ void updateFilterBandwidth() {
   } else if (state.FilterBandwidth = 20000) {
     state.FilterBandwidth = 4300;
   }
+}
+
+
+//service helper methods
+void print_binary(int v, int num_places)
+{
+    int mask=0, n;
+
+    for (n=1; n<=num_places; n++)
+    {
+        mask = (mask << 1) | 0x0001;
+    }
+    v = v & mask;  // truncate v to specified number of places
+
+    while(num_places)
+    {
+
+        if (v & (0x0001 << num_places-1))
+        {
+             Serial.print("1");
+        }
+        else
+        {
+             Serial.print("0");
+        }
+
+        --num_places;
+        if(((num_places%4) == 0) && (num_places != 0))
+        {
+            Serial.print("_");
+        }
+    }
 }
