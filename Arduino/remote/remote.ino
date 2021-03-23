@@ -3,6 +3,13 @@
  */
 #include <TimerOne.h>
 
+//first PCF port replicator routine
+#include "lib/PCF8575.cpp"
+PCF8575 PCF_1(0x20);
+volatile bool PCF_1_FLAG = false;
+const int PCF_1_IRQ_PIN = 18;
+uint16_t pcf_1_status;
+
 
 struct __attribute__((__packed__)) State {
   int8_t      Demodulator             = 0; //Demodulator type,        Enum:
@@ -65,6 +72,8 @@ const int digit_clock_pin = 15; //LOAD/latch
 // pin 14 of 74HC595 (DS)
 const int data_pin = 2; //SDI pin
 
+
+
 // digit pattern for a 7-segment display
 const byte digit_pattern[16] =
 {
@@ -99,11 +108,21 @@ void setup() {
 
   //Timer interrupt for display freq;
   Timer1.initialize(1000000); //timing for 1s
-  Timer1.attachInterrupt(fillRegisters);
+  Timer1.attachInterrupt(fillRegisters_isr);
+
+  //PCF_1 interrupt for keyboard and buttons
+  PCF_1.begin();
+  pinMode(PCF_1_IRQ_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(PCF_1_IRQ_PIN), pcf_isr, FALLING);
 }
 
 void loop() {
   state.fingerprint = random();
+
+  if(PCF_1_FLAG){
+    PCF_1_FLAG = false;
+    pcf_1_status = PCF_1.read16();
+  }
 
   lastRandomSent = state.fingerprint;
   updateDemodulator();
@@ -120,8 +139,8 @@ void loop() {
   //  delay(1000); //wait 1000 mS
   String str = Serial.readStringUntil('\n');
 
-  //  if (str.length() > 0) {
-  //    parseStruct(str);
+    if (str.length() > 0) {
+//      parseStruct(str);
   //    Serial.println("Read value");
   //    Serial.print(state.Demodulator);
   //    Serial.print("\t");
@@ -133,7 +152,7 @@ void loop() {
   //    Serial.print("\t");
   //    Serial.print(state.fingerprint);
   //    Serial.println("");
-  //  }
+    }
 }
 
 void echoStruct() {
@@ -182,9 +201,13 @@ void echoStruct() {
 
 //  print_binary(state.Step, 16);
 //  Serial.print(state.Step, BIN);
-  Serial.print("\t");
+//  Serial.print("\t");
+  
+//  Serial.print(pcf_1_status, BIN);
+  print_binary(pcf_1_status, 16);
   
 //  Serial.print(state.fingerprint);
+  Serial.println("==================");
   Serial.println("");
 }
 
@@ -198,7 +221,7 @@ void parseStruct(String string) {
          &state.fingerprint);
 }
   
-void fillRegisters() {
+void fillRegisters_isr() {
   int array[12];
   int temporaryStep = state.Step;
   long int number = state.CenterFrequency;
@@ -236,9 +259,13 @@ void fillRegisters() {
     array[i] = number % 10;
     number /= 10;
   }
-  print_binary(temporaryStep, 16);
+//  print_binary(temporaryStep, 16);
 
   digitalWrite(digit_clock_pin, HIGH);
+}
+
+void pcf_isr(){
+  PCF_1_FLAG = true;
 }
 
 void updateDemodulator() {
