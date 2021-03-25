@@ -8,7 +8,7 @@
 PCF8575 PCF_1(0x20);
 volatile bool PCF_1_FLAG = false;
 const int PCF_1_IRQ_PIN = 18;
-uint16_t pcf_1_status;
+volatile uint16_t pcf_1_status = 65535; //all pins high
 
 
 struct __attribute__((__packed__)) State {
@@ -99,6 +99,7 @@ long lastRandomSent;
 
 void setup() {
   Serial.begin(9600);
+  Serial.setTimeout(10); //10 mS
   State state;
 
   //LED pins setup
@@ -122,22 +123,44 @@ void loop() {
   if(PCF_1_FLAG){
     PCF_1_FLAG = false;
     pcf_1_status = PCF_1.read16();
+
+    //process Audio Mute button toggle
+    if(!bitRead(pcf_1_status, 0))
+    {
+      state.AudioMute = !state.AudioMute;
+    }
+
+    //process Bias-T button toggle
+    if(!bitRead(pcf_1_status, 1))
+    {
+      state.BiasTEnable = !state.BiasTEnable;
+    }
+
+    //process VfoMode button toggle
+    if(!bitRead(pcf_1_status, 14))
+    {
+      state.VfoMode = !state.VfoMode;
+    }
+
+    //process StepUp button
+    if(!bitRead(pcf_1_status, 15))
+    {
+      stepUp();
+    }
+
+    //process StepDown button
+    if(!bitRead(pcf_1_status, 7))
+    {
+      stepDown();
+    }
   }
 
   lastRandomSent = state.fingerprint;
-  updateDemodulator();
-  updateVfoFrequency();
-  updateCenterFrequency();
-  updateFilterBandwidth();
-  updateStep();
-  updateMute();
-  updateBiasT();
-  updateMode();
 
   echoStruct();
 
-  //  delay(1000); //wait 1000 mS
-  String str = Serial.readStringUntil('\n');
+  String str = "";
+//  String str = Serial.readStringUntil('\n');
 
     if (str.length() > 0) {
 //      parseStruct(str);
@@ -201,10 +224,11 @@ void echoStruct() {
 
 //  print_binary(state.Step, 16);
 //  Serial.print(state.Step, BIN);
+    print_binary(state.Step, 16);
 //  Serial.print("\t");
   
 //  Serial.print(pcf_1_status, BIN);
-  print_binary(pcf_1_status, 16);
+//  print_binary(pcf_1_status, 16);
   
 //  Serial.print(state.fingerprint);
   Serial.println("==================");
@@ -262,6 +286,17 @@ void fillRegisters_isr() {
 //  print_binary(temporaryStep, 16);
 
   digitalWrite(digit_clock_pin, HIGH);
+
+
+  //debug routine
+  updateDemodulator();
+  updateVfoFrequency();
+  updateCenterFrequency();
+  updateFilterBandwidth();
+
+//  updateMute();
+//  updateBiasT();
+//  updateMode();
 }
 
 void pcf_isr(){
@@ -286,16 +321,20 @@ void updateCenterFrequency() {
   }
 }
 
-void updateStep() {
+void stepUp(){
   state.Step = state.Step << 1;
   if(state.Step == 0)
   {
     state.Step = 16; //4 bits reserved for buttons
-  }  
+  }
 }
-
-void stepUp(){}
-void stepDown(){}
+void stepDown(){
+  state.Step = state.Step >> 1;
+  if(state.Step <= 16)
+  {
+    state.Step = 32768; //4 bits reserved for buttons
+  }
+}
 void updateVfoFrequency() {
   if (state.VfoFrequency >= 3654320 && state.VfoFrequency <= 456300000) // ~7,6 MHz <= VFO <= 443,3 MHz
   {
@@ -305,32 +344,7 @@ void updateVfoFrequency() {
   }
 }
 
-void updateMute(){
-  //dummy code
-  if(state.CenterFrequency%2==0){
-    state.AudioMute = true;
-  } else {
-    state.AudioMute = false;
-  }  
-}
 
-void updateBiasT(){
-  //dummy code
-  if(state.CenterFrequency%2==1){
-    state.BiasTEnable = true;
-  }else{
-    state.BiasTEnable = false;
-  }
-}
-
-void updateMode(){
-  //dummy code
-  if(state.CenterFrequency%3==0){
-    state.VfoMode = true;
-  }else{
-    state.VfoMode = false;
-  }
-}
   
 void updateFilterBandwidth() {
   if (state.FilterBandwidth >= 3300 && state.FilterBandwidth <= 20000) // 4,3 KHz <= FilterBandwidth <= 20 KHz
