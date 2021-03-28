@@ -58,7 +58,7 @@ struct __attribute__((__packed__)) State {
   bool        AudioMute               = false;
   bool        BiasTEnable             = false;
   //non essential params
-  int         Step                    = 16;         //trailing four bits are reserved for aux and does not mapped to step place highlighter
+  uint16_t    Step                    = 16;         //trailing four bits are reserved for aux and does not mapped to step place highlighter
   bool        VfoMode                 = false;      //
   
   long int    fingerprint;                          //hash-like substitute. @ToDo: rework me later
@@ -108,7 +108,7 @@ void setup() {
   pinMode(digit_clock_pin,  OUTPUT);
 
   //Timer interrupt for display freq;
-  Timer1.initialize(1000000); //timing for 1s
+  Timer1.initialize(10000); //uS timing value
   Timer1.attachInterrupt(fillRegisters_isr);
 
   //PCF_1 interrupt for keyboard and buttons
@@ -159,8 +159,7 @@ void loop() {
 
   echoStruct();
 
-  String str = "";
-//  String str = Serial.readStringUntil('\n');
+  String str = Serial.readStringUntil('\n');
 
     if (str.length() > 0) {
 //      parseStruct(str);
@@ -293,10 +292,6 @@ void fillRegisters_isr() {
   updateVfoFrequency();
   updateCenterFrequency();
   updateFilterBandwidth();
-
-//  updateMute();
-//  updateBiasT();
-//  updateMode();
 }
 
 void pcf_isr(){
@@ -321,7 +316,7 @@ void updateCenterFrequency() {
   }
 }
 
-void stepUp(){
+void stepUp(){  
   state.Step = state.Step << 1;
   if(state.Step == 0)
   {
@@ -330,8 +325,9 @@ void stepUp(){
 }
 void stepDown(){
   state.Step = state.Step >> 1;
-  if(state.Step <= 16)
+  if(state.Step < 16)
   {
+    Serial.println("flush");
     state.Step = 32768; //4 bits reserved for buttons
   }
 }
