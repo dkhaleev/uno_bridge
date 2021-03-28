@@ -96,7 +96,12 @@ const byte digit_pattern[16] =
   B01110001   // F
 };
 
+//temporary substitute for checksum
 long lastRandomSent;
+
+unsigned long timepassed = millis();
+
+unsigned long passed_10 = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -120,12 +125,18 @@ void setup() {
   //TFT init
   tft.init();
   tft.setRotation(1);
+  tft.fillScreen(0x0000);
 }
 
 void loop() {
   state.fingerprint = random();
 
-  tft.fillScreen(0x0000);
+  
+  tft.setCursor(0, 0, 2);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextSize(2);
+  tft.setTextFont(2);
+  tft.println("Hello World");
 
   if(PCF_1_FLAG){
     processPCF();    
@@ -219,7 +230,8 @@ void parseStruct(String string) {
          &state.FilterBandwidth,
          &state.fingerprint);
 }
-  
+
+//interrupt service routine by Timer1 interrupt signal
 void fillRegisters_isr() {
   int array[12];
   int temporaryStep = state.Step;
@@ -270,6 +282,7 @@ void fillRegisters_isr() {
   updateFilterBandwidth();
 }
 
+//interrupt service routine by PCF interrupt signal
 void pcf_isr(){
   PCF_1_FLAG = true;
 }
@@ -310,6 +323,7 @@ void processPCF(){
     }
 }
 
+//mocking method. Cycle demodulator type
 void updateDemodulator() {
   if (state.Demodulator < 13)
   {
@@ -319,6 +333,7 @@ void updateDemodulator() {
   }
 }
 
+//mocking method. Cycle center-frequency value
 void updateCenterFrequency() {
   if (state.CenterFrequency >= 3654320 && state.CenterFrequency <= 456300000) // ~7,6 MHz <= VFO <= 443,3 MHz
   {
@@ -328,6 +343,7 @@ void updateCenterFrequency() {
   }
 }
 
+//move place highlighter one step upward 
 void stepUp(){  
   state.Step = state.Step << 1;
   if(state.Step == 0)
@@ -336,6 +352,7 @@ void stepUp(){
   }
 }
 
+//move place highlighter one step downward
 void stepDown(){
   state.Step = state.Step >> 1;
   if(state.Step < 16)
@@ -343,6 +360,8 @@ void stepDown(){
     state.Step = 32768; //4 bits reserved for buttons
   }
 }
+
+//mocking method. Cycle VFO frequency value
 void updateVfoFrequency() {
   if (state.VfoFrequency >= 3654320 && state.VfoFrequency <= 456300000) // ~7,6 MHz <= VFO <= 443,3 MHz
   {
@@ -352,8 +371,7 @@ void updateVfoFrequency() {
   }
 }
 
-
-  
+//mocking method. Cycle Filter Bandwidth value  
 void updateFilterBandwidth() {
   if (state.FilterBandwidth >= 3300 && state.FilterBandwidth <= 20000) // 4,3 KHz <= FilterBandwidth <= 20 KHz
   {
@@ -363,8 +381,8 @@ void updateFilterBandwidth() {
   }
 }
 
-
-//service helper methods
+//--------------service helper methods--------------
+//print value in binary-way. 
 void print_binary(int v, int num_places)
 {
     int mask=0, n;
