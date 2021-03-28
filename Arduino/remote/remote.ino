@@ -10,6 +10,9 @@ volatile bool PCF_1_FLAG = false;
 const int PCF_1_IRQ_PIN = 18;
 volatile uint16_t pcf_1_status = 65535; //all pins high
 
+//TFT screen routine
+#include "lib/TFT_HX8357.h"
+TFT_HX8357 tft = TFT_HX8357();
 
 struct __attribute__((__packed__)) State {
   int8_t      Demodulator             = 0; //Demodulator type,        Enum:
@@ -72,8 +75,6 @@ const int digit_clock_pin = 15; //LOAD/latch
 // pin 14 of 74HC595 (DS)
 const int data_pin = 2; //SDI pin
 
-
-
 // digit pattern for a 7-segment display
 const byte digit_pattern[16] =
 {
@@ -115,44 +116,19 @@ void setup() {
   PCF_1.begin();
   pinMode(PCF_1_IRQ_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(PCF_1_IRQ_PIN), pcf_isr, FALLING);
+
+  //TFT init
+  tft.init();
+  tft.setRotation(1);
 }
 
 void loop() {
   state.fingerprint = random();
 
+  tft.fillScreen(0x0000);
+
   if(PCF_1_FLAG){
-    PCF_1_FLAG = false;
-    pcf_1_status = PCF_1.read16();
-
-    //process Audio Mute button toggle
-    if(!bitRead(pcf_1_status, 0))
-    {
-      state.AudioMute = !state.AudioMute;
-    }
-
-    //process Bias-T button toggle
-    if(!bitRead(pcf_1_status, 1))
-    {
-      state.BiasTEnable = !state.BiasTEnable;
-    }
-
-    //process VfoMode button toggle
-    if(!bitRead(pcf_1_status, 14))
-    {
-      state.VfoMode = !state.VfoMode;
-    }
-
-    //process StepUp button
-    if(!bitRead(pcf_1_status, 15))
-    {
-      stepUp();
-    }
-
-    //process StepDown button
-    if(!bitRead(pcf_1_status, 7))
-    {
-      stepDown();
-    }
+    processPCF();    
   }
 
   lastRandomSent = state.fingerprint;
@@ -223,7 +199,7 @@ void echoStruct() {
 
 //  print_binary(state.Step, 16);
 //  Serial.print(state.Step, BIN);
-    print_binary(state.Step, 16);
+//    print_binary(state.Step, 16);
 //  Serial.print("\t");
   
 //  Serial.print(pcf_1_status, BIN);
@@ -298,6 +274,42 @@ void pcf_isr(){
   PCF_1_FLAG = true;
 }
 
+//process PCF_1 fetch and modify state accordingly
+void processPCF(){
+  PCF_1_FLAG = false;
+  pcf_1_status = PCF_1.read16();
+
+    //process Audio Mute button toggle
+    if(!bitRead(pcf_1_status, 0))
+    {
+      state.AudioMute = !state.AudioMute;
+    }
+
+    //process Bias-T button toggle
+    if(!bitRead(pcf_1_status, 1))
+    {
+      state.BiasTEnable = !state.BiasTEnable;
+    }
+
+    //process VfoMode button toggle
+    if(!bitRead(pcf_1_status, 14))
+    {
+      state.VfoMode = !state.VfoMode;
+    }
+
+    //process StepUp button
+    if(!bitRead(pcf_1_status, 15))
+    {
+      stepUp();
+    }
+
+    //process StepDown button
+    if(!bitRead(pcf_1_status, 7))
+    {
+      stepDown();
+    }
+}
+
 void updateDemodulator() {
   if (state.Demodulator < 13)
   {
@@ -323,11 +335,11 @@ void stepUp(){
     state.Step = 16; //4 bits reserved for buttons
   }
 }
+
 void stepDown(){
   state.Step = state.Step >> 1;
   if(state.Step < 16)
   {
-    Serial.println("flush");
     state.Step = 32768; //4 bits reserved for buttons
   }
 }
