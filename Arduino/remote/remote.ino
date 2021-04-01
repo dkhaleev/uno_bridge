@@ -8,11 +8,15 @@
 PCF8575 PCF_1(0x20);
 volatile bool PCF_1_FLAG = false;
 const int PCF_1_IRQ_PIN = 18;
-volatile uint16_t pcf_1_status = 65535; //all pins high
+uint16_t pcf_1_status = 65535; //all pins high
 
 //TFT screen routine
 #include "lib/TFT_HX8357.h"
 TFT_HX8357 tft = TFT_HX8357();
+
+//Rotary encoder routine
+#include "lib/rotary.cpp"
+Rotary r = Rotary(9, 10);
 
 struct __attribute__((__packed__)) State {
   int8_t      Demodulator             = 0; //Demodulator type,        Enum:
@@ -131,13 +135,8 @@ void setup() {
 void loop() {
   state.fingerprint = random();
 
+  updateDisplay();
   
-  tft.setCursor(0, 0, 2);
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setTextSize(2);
-  tft.setTextFont(2);
-  tft.println("Hello World");
-
   if(PCF_1_FLAG){
     processPCF();    
   }
@@ -217,8 +216,8 @@ void echoStruct() {
 //  print_binary(pcf_1_status, 16);
   
 //  Serial.print(state.fingerprint);
-  Serial.println("==================");
-  Serial.println("");
+//  Serial.println("==================");
+//  Serial.println("");
 }
 
 void parseStruct(String string) {
@@ -274,7 +273,6 @@ void fillRegisters_isr() {
 
   digitalWrite(digit_clock_pin, HIGH);
 
-
   //debug routine
   updateDemodulator();
   updateVfoFrequency();
@@ -321,6 +319,55 @@ void processPCF(){
     {
       stepDown();
     }
+
+    //обработка прерываний от энкодера
+//    boolean inverted = r.test(PCF_1_FLAG);
+//    Serial.println(inverted);
+//ISR(PCINT2_vect) {
+  unsigned char result = r.process(pcf_1_status);
+  Serial.println(result);
+ if (result == DIR_NONE) {
+//  mod=0;
+  Serial.println("none");
+  } else if (result == DIR_CW) {
+//    mod=1; countfreq();
+    Serial.println("CW");
+    SQLUp();
+    
+  } else if (result == DIR_CCW) {
+//    mod=-1; countfreq();
+    Serial.println("CCW");
+    SQLDown();
+  }
+////}
+
+//    encoder0ALast
+//    n = bitRead(pcf_1_status, 9);
+//    //9, 10;
+//    if((encoder0ALast == 0) && (n == 1)){
+//      if(bitRead(pcf_1_status, 10) == 0){
+//        stepDown();
+//      } else {
+//        stepUp();
+//      }
+//    }
+//
+//    encoder0ALast = n;
+    
+}
+
+void updateDisplay(){
+  tft.setCursor(0, 0, 2);
+//  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextSize(2);
+  tft.setTextFont(2);
+  char buffer[50];
+  sprintf(buffer, "SQL: %d", state.SquelchLevel);
+  tft.println(buffer);
+  memset(buffer, 0, 50);
+  sprintf(buffer, "Mode: %s", state.VfoMode?"VFO":"Memory");
+  tft.print(buffer);
 }
 
 //mocking method. Cycle demodulator type
@@ -358,6 +405,18 @@ void stepDown(){
   if(state.Step < 16)
   {
     state.Step = 32768; //4 bits reserved for buttons
+  }
+}
+
+void SQLUp(){
+  if(state.SquelchLevel < 100){
+    state.SquelchLevel++;  
+  }  
+}
+
+void SQLDown(){
+  if(state.SquelchLevel > 0){
+    state.SquelchLevel--;
   }
 }
 
