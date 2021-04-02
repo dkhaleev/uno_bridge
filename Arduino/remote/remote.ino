@@ -1,6 +1,6 @@
 /* SDRuno Bridge plugin mocking firmware v0.1
- *
- */
+
+*/
 #include <TimerOne.h>
 
 //first PCF port replicator routine
@@ -14,9 +14,13 @@ uint16_t pcf_1_status = 65535; //all pins high
 #include "lib/TFT_HX8357.h"
 TFT_HX8357 tft = TFT_HX8357();
 
+//pinChangeInerrupts routine. Used this because of exhausted hardware interrupts
+#include "PinChangeInterrupt.h"
+
 //Rotary encoder routine
-#include "lib/rotary.cpp"
-Rotary r = Rotary(9, 10);
+int encoderAPinA = 66; //A12
+int encoderAPinB = 67; //A13
+uint8_t encoderAPinALast = LOW;
 
 struct __attribute__((__packed__)) State {
   int8_t      Demodulator             = 0; //Demodulator type,        Enum:
@@ -67,9 +71,11 @@ struct __attribute__((__packed__)) State {
   //non essential params
   uint16_t    Step                    = 16;         //trailing four bits are reserved for aux and does not mapped to step place highlighter
   bool        VfoMode                 = false;      //
-  
+
   long int    fingerprint;                          //hash-like substitute. @ToDo: rework me later
 } state;
+
+bool state_changed = false;
 
 //LED params
 // pin 11 of 74HC595 (SHCP)
@@ -126,6 +132,13 @@ void setup() {
   pinMode(PCF_1_IRQ_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(PCF_1_IRQ_PIN), pcf_isr, FALLING);
 
+  //  pinMode(66, INPUT_PULLUP);
+  //  pinMode(67, INPUT_PULLUP);
+  //  pinMode(68, INPUT_PULLUP);
+  //  pinMode(69, INPUT_PULLUP);
+  attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(66), encoder_a_isr, CHANGE);
+  //  attachInterrupt(digitalPinToInterrupt(A12), encoder_isr, FALLING);
+
   //TFT init
   tft.init();
   tft.setRotation(1);
@@ -135,89 +148,90 @@ void setup() {
 void loop() {
   state.fingerprint = random();
 
-  updateDisplay();
-  
-  if(PCF_1_FLAG){
-    processPCF();    
+  if (state_changed) {
+    updateDisplay();
+    echoStruct();
+  }
+
+  if (PCF_1_FLAG) {
+    processPCF();
   }
 
   lastRandomSent = state.fingerprint;
 
-  echoStruct();
-
   String str = Serial.readStringUntil('\n');
 
-    if (str.length() > 0) {
-//      parseStruct(str);
-  //    Serial.println("Read value");
-  //    Serial.print(state.Demodulator);
-  //    Serial.print("\t");
-  //    Serial.print(state.VfoFrequency);
-  //    Serial.print("\t");
-  //    Serial.print(state.CenterFrequency);
-  //    Serial.print("\t");
-  //    Serial.print(state.FilterBandwidth);
-  //    Serial.print("\t");
-  //    Serial.print(state.fingerprint);
-  //    Serial.println("");
-    }
+  if (str.length() > 0) {
+    //      parseStruct(str);
+    //    Serial.println("Read value");
+    //    Serial.print(state.Demodulator);
+    //    Serial.print("\t");
+    //    Serial.print(state.VfoFrequency);
+    //    Serial.print("\t");
+    //    Serial.print(state.CenterFrequency);
+    //    Serial.print("\t");
+    //    Serial.print(state.FilterBandwidth);
+    //    Serial.print("\t");
+    //    Serial.print(state.fingerprint);
+    //    Serial.println("");
+  }
 }
 
 void echoStruct() {
-//  Serial.print(state.Demodulator);
-//  Serial.print("\t");
-//  Serial.print(state.WfmDeemphasisMode);
-//  Serial.print("\t");
-//  Serial.print(state.NoiseBlankerMode);
-//  Serial.print("\t");
-//  Serial.print(state.AgcMode);
-//  Serial.print("\t");
-//  Serial.print(state.AgcThreshold);
-//  Serial.print("\t");
-//  Serial.print(state.NoiseBlankerLevel);
-//  Serial.print("\t");
-//  Serial.print(state.NoiseReductionLevel);
-//  Serial.print("\t");
-//  Serial.print(state.CwPeakFilterThreshold);
-//  Serial.print("\t");
-//  Serial.print(state.AudioVolume);
-//  Serial.print("\t");
-//  Serial.print(state.SP1MinPower);
-//  Serial.print("\t");
-//  Serial.print(state.VfoFrequency);
-//  Serial.print("\t");
-//  Serial.print(state.CenterFrequency);
-//  Serial.print("\t");
-//  Serial.print(state.SP1MinFrequency);
-//  Serial.print("\t");
-//  Serial.print(state.SP1MaxFrequency);
-//  Serial.print("\t");
-//  Serial.print(state.MPXLevel);
-//  Serial.print("\t");
-//  Serial.print(state.FilterBandwidth);
-//  Serial.print("\t");
-//  Serial.print(state.SquelchLevel);
-//  Serial.print("\t");
-//  Serial.print(state.SquelchEnable);
-//  Serial.print("\t");
-//  Serial.print(state.FmNoiseReductionEnable);
-//  Serial.print("\t");
-//  Serial.print(state.AudioMute);
-//  Serial.print("\t");
-//  Serial.print(state.BiasTEnable);
-//  Serial.print("\t");
+  //  Serial.print(state.Demodulator);
+  //  Serial.print("\t");
+  //  Serial.print(state.WfmDeemphasisMode);
+  //  Serial.print("\t");
+  //  Serial.print(state.NoiseBlankerMode);
+  //  Serial.print("\t");
+  //  Serial.print(state.AgcMode);
+  //  Serial.print("\t");
+  //  Serial.print(state.AgcThreshold);
+  //  Serial.print("\t");
+  //  Serial.print(state.NoiseBlankerLevel);
+  //  Serial.print("\t");
+  //  Serial.print(state.NoiseReductionLevel);
+  //  Serial.print("\t");
+  //  Serial.print(state.CwPeakFilterThreshold);
+  //  Serial.print("\t");
+  //  Serial.print(state.AudioVolume);
+  //  Serial.print("\t");
+  //  Serial.print(state.SP1MinPower);
+  //  Serial.print("\t");
+  //  Serial.print(state.VfoFrequency);
+  //  Serial.print("\t");
+  //  Serial.print(state.CenterFrequency);
+  //  Serial.print("\t");
+  //  Serial.print(state.SP1MinFrequency);
+  //  Serial.print("\t");
+  //  Serial.print(state.SP1MaxFrequency);
+  //  Serial.print("\t");
+  //  Serial.print(state.MPXLevel);
+  //  Serial.print("\t");
+  //  Serial.print(state.FilterBandwidth);
+  //  Serial.print("\t");
+  //  Serial.print(state.SquelchLevel);
+  //  Serial.print("\t");
+  //  Serial.print(state.SquelchEnable);
+  //  Serial.print("\t");
+  //  Serial.print(state.FmNoiseReductionEnable);
+  //  Serial.print("\t");
+  //  Serial.print(state.AudioMute);
+  //  Serial.print("\t");
+  //  Serial.print(state.BiasTEnable);
+  //  Serial.print("\t");
 
-//  print_binary(state.Step, 16);
-//  Serial.print(state.Step, BIN);
-//    print_binary(state.Step, 16);
-//  Serial.print("\t");
-  
-//  Serial.print(pcf_1_status, BIN);
-//  print_binary(pcf_1_status, 16);
-  
-//  Serial.print(state.fingerprint);
-//  Serial.println("==================");
-//  Serial.println("");
+  //  print_binary(state.Step, 16);
+  //  Serial.print(state.Step, BIN);
+  //    print_binary(state.Step, 16);
+  //  Serial.print("\t");
+
+  //  Serial.print(pcf_1_status, BIN);
+  //  print_binary(pcf_1_status, 16);
+
+  //  Serial.print(state.fingerprint);
+  //  Serial.println("==================");
+  //  Serial.println("");
 }
 
 void parseStruct(String string) {
@@ -232,133 +246,109 @@ void parseStruct(String string) {
 
 //interrupt service routine by Timer1 interrupt signal
 void fillRegisters_isr() {
-  int array[12];
-  int temporaryStep = state.Step;
-  long int number = state.CenterFrequency;
+  if (state_changed) {
+    int array[12];
+    int temporaryStep = state.Step;
+    long int number = state.CenterFrequency;
 
-  digitalWrite(digit_clock_pin, LOW);
+    digitalWrite(digit_clock_pin, LOW);
 
-  //highlight mute button
-  if(state.AudioMute){
-    bitSet(temporaryStep, 3);
-  }else{
-    bitClear(temporaryStep, 3);
+    //highlight mute button
+    if (state.AudioMute) {
+      bitSet(temporaryStep, 3);
+    } else {
+      bitClear(temporaryStep, 3);
+    }
+
+    //highlight bias-T button
+    if (state.BiasTEnable) {
+      bitSet(temporaryStep, 2);
+    } else {
+      bitClear(temporaryStep, 2);
+    }
+
+    //highlight VFO Mode button
+    if (state.VfoMode) {
+      bitSet(temporaryStep, 1);
+    } else {
+      bitClear(temporaryStep, 1);
+    }
+
+    //highlight active step place and buttons
+    shiftOut(data_pin, bit_clock_pin, LSBFIRST, temporaryStep);
+    shiftOut(data_pin, bit_clock_pin, LSBFIRST, temporaryStep >> 8);
+
+    for (int i = 12; i > 0; i--) {
+      byte pattern = digit_pattern[number % 10];
+      shiftOut(data_pin, bit_clock_pin, MSBFIRST, ~pattern);
+      array[i] = number % 10;
+      number /= 10;
+    }
+
+    digitalWrite(digit_clock_pin, HIGH);
   }
-
-  //highlight bias-T button
-  if(state.BiasTEnable){
-    bitSet(temporaryStep, 2);
-  }else{
-    bitClear(temporaryStep, 2);
-  }
-
-  //highlight VFO Mode button
-  if(state.VfoMode){
-    bitSet(temporaryStep, 1);  
-  }else{
-    bitClear(temporaryStep, 1);
-  }
-  
-  //highlight active step place and buttons
-  shiftOut(data_pin, bit_clock_pin, LSBFIRST, temporaryStep);
-  shiftOut(data_pin, bit_clock_pin, LSBFIRST, temporaryStep >> 8);
-  
-  for (int i = 12; i > 0; i--) {
-    byte pattern = digit_pattern[number % 10];
-    shiftOut(data_pin, bit_clock_pin, MSBFIRST, ~pattern);
-    array[i] = number % 10;
-    number /= 10;
-  }
-//  print_binary(temporaryStep, 16);
-
-  digitalWrite(digit_clock_pin, HIGH);
-
-  //debug routine
-  updateDemodulator();
-  updateVfoFrequency();
-  updateCenterFrequency();
-  updateFilterBandwidth();
 }
 
 //interrupt service routine by PCF interrupt signal
-void pcf_isr(){
+void pcf_isr() {
   PCF_1_FLAG = true;
 }
 
 //process PCF_1 fetch and modify state accordingly
-void processPCF(){
+void processPCF() {
   PCF_1_FLAG = false;
   pcf_1_status = PCF_1.read16();
 
-    //process Audio Mute button toggle
-    if(!bitRead(pcf_1_status, 0))
-    {
-      state.AudioMute = !state.AudioMute;
-    }
-
-    //process Bias-T button toggle
-    if(!bitRead(pcf_1_status, 1))
-    {
-      state.BiasTEnable = !state.BiasTEnable;
-    }
-
-    //process VfoMode button toggle
-    if(!bitRead(pcf_1_status, 14))
-    {
-      state.VfoMode = !state.VfoMode;
-    }
-
-    //process StepUp button
-    if(!bitRead(pcf_1_status, 15))
-    {
-      stepUp();
-    }
-
-    //process StepDown button
-    if(!bitRead(pcf_1_status, 7))
-    {
-      stepDown();
-    }
-
-    //обработка прерываний от энкодера
-//    boolean inverted = r.test(PCF_1_FLAG);
-//    Serial.println(inverted);
-//ISR(PCINT2_vect) {
-  unsigned char result = r.process(pcf_1_status);
-  Serial.println(result);
- if (result == DIR_NONE) {
-//  mod=0;
-  Serial.println("none");
-  } else if (result == DIR_CW) {
-//    mod=1; countfreq();
-    Serial.println("CW");
-    SQLUp();
-    
-  } else if (result == DIR_CCW) {
-//    mod=-1; countfreq();
-    Serial.println("CCW");
-    SQLDown();
+  //process Audio Mute button toggle
+  if (!bitRead(pcf_1_status, 0))
+  {
+    state.AudioMute = !state.AudioMute;
   }
-////}
 
-//    encoder0ALast
-//    n = bitRead(pcf_1_status, 9);
-//    //9, 10;
-//    if((encoder0ALast == 0) && (n == 1)){
-//      if(bitRead(pcf_1_status, 10) == 0){
-//        stepDown();
-//      } else {
-//        stepUp();
-//      }
-//    }
-//
-//    encoder0ALast = n;
-    
+  //process Bias-T button toggle
+  if (!bitRead(pcf_1_status, 1))
+  {
+    state.BiasTEnable = !state.BiasTEnable;
+  }
+
+  //process VfoMode button toggle
+  if (!bitRead(pcf_1_status, 14))
+  {
+    state.VfoMode = !state.VfoMode;
+  }
+
+  //process StepUp button
+  if (!bitRead(pcf_1_status, 15))
+  {
+    stepUp();
+  }
+
+  //process StepDown button
+  if (!bitRead(pcf_1_status, 7))
+  {
+    stepDown();
+  }
+
+  state_changed = true;
 }
 
-void updateDisplay(){
+void encoder_a_isr() {
+  uint8_t n = digitalRead(encoderAPinA);
+  if ((encoderAPinALast == LOW) && (n == HIGH)) {
+    if (digitalRead(encoderAPinB) == LOW) {
+      SQLUp();
+      state_changed = true; // Changed the value
+    } else {
+      SQLDown();
+      state_changed = true; // Changed the value
+    }
+  }
+  encoderAPinALast = n;
+}
+
+void updateDisplay() {
   tft.setCursor(0, 0, 2);
-//  tft.fillScreen(TFT_BLACK);
+  //  tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextSize(2);
   tft.setTextFont(2);
@@ -366,108 +356,68 @@ void updateDisplay(){
   sprintf(buffer, "SQL: %d", state.SquelchLevel);
   tft.println(buffer);
   memset(buffer, 0, 50);
-  sprintf(buffer, "Mode: %s", state.VfoMode?"VFO":"Memory");
+  sprintf(buffer, "Mode: %s", state.VfoMode ? "VFO" : "Memory");
   tft.print(buffer);
 }
 
-//mocking method. Cycle demodulator type
-void updateDemodulator() {
-  if (state.Demodulator < 13)
-  {
-    state.Demodulator += 1;
-  } else {
-    state.Demodulator = 0;
-  }
-}
-
-//mocking method. Cycle center-frequency value
-void updateCenterFrequency() {
-  if (state.CenterFrequency >= 3654320 && state.CenterFrequency <= 456300000) // ~7,6 MHz <= VFO <= 443,3 MHz
-  {
-    state.CenterFrequency -= 1;
-  } else if (state.CenterFrequency = 3654320) {
-    state.CenterFrequency = 3654320;
-  }
-}
-
-//move place highlighter one step upward 
-void stepUp(){  
+//move place highlighter one step upward
+void stepUp() {
   state.Step = state.Step << 1;
-  if(state.Step == 0)
+  if (state.Step == 0)
   {
     state.Step = 16; //4 bits reserved for buttons
   }
 }
 
 //move place highlighter one step downward
-void stepDown(){
+void stepDown() {
   state.Step = state.Step >> 1;
-  if(state.Step < 16)
+  if (state.Step < 16)
   {
     state.Step = 32768; //4 bits reserved for buttons
   }
 }
 
-void SQLUp(){
-  if(state.SquelchLevel < 100){
-    state.SquelchLevel++;  
-  }  
+void SQLUp() {
+  if (state.SquelchLevel < 100) {
+    state.SquelchLevel++;
+  }
 }
 
-void SQLDown(){
-  if(state.SquelchLevel > 0){
+void SQLDown() {
+  if (state.SquelchLevel > 0) {
     state.SquelchLevel--;
   }
 }
 
-//mocking method. Cycle VFO frequency value
-void updateVfoFrequency() {
-  if (state.VfoFrequency >= 3654320 && state.VfoFrequency <= 456300000) // ~7,6 MHz <= VFO <= 443,3 MHz
-  {
-    state.VfoFrequency += 1;
-  } else if (state.VfoFrequency = 456300000) {
-    state.VfoFrequency = 3654320;
-  }
-}
-
-//mocking method. Cycle Filter Bandwidth value  
-void updateFilterBandwidth() {
-  if (state.FilterBandwidth >= 3300 && state.FilterBandwidth <= 20000) // 4,3 KHz <= FilterBandwidth <= 20 KHz
-  {
-    state.FilterBandwidth += 1;
-  } else if (state.FilterBandwidth = 20000) {
-    state.FilterBandwidth = 4300;
-  }
-}
-
 //--------------service helper methods--------------
-//print value in binary-way. 
+//print value in binary-way.
 void print_binary(int v, int num_places)
 {
-    int mask=0, n;
+  int mask = 0, n;
 
-    for (n=1; n<=num_places; n++)
+  for (n = 1; n <= num_places; n++)
+  {
+    mask = (mask << 1) | 0x0001;
+  }
+  v = v & mask;  // truncate v to specified number of places
+
+  while (num_places)
+  {
+
+    if (v & (0x0001 << num_places - 1))
     {
-        mask = (mask << 1) | 0x0001;
+      Serial.print("1");
     }
-    v = v & mask;  // truncate v to specified number of places
-
-    while(num_places)
+    else
     {
-
-        if (v & (0x0001 << num_places-1))
-        {
-             Serial.print("1");
-        }
-        else
-        {
-             Serial.print("0");
-        }
-
-        --num_places;
-        if(((num_places%4) == 0) && (num_places != 0))
-        {
-            Serial.print("_");
-        }
+      Serial.print("0");
     }
+
+    --num_places;
+    if (((num_places % 4) == 0) && (num_places != 0))
+    {
+      Serial.print("_");
+    }
+  }
 }
