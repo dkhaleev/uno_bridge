@@ -16,7 +16,7 @@
  ****************************************************/
 
 // Include header file that defines the fonts loaded and the pins to be used
-#include <User_Setup.h>
+#include "User_Setup.h"
 
 // Stop fonts etc being loaded multiple times
 #ifndef _TFT_HX8357H_
@@ -26,34 +26,34 @@
 // Sets flag so RLE rendering code is optionally compiled
 
 #ifdef LOAD_GLCD
-  #include <Fonts/glcdfont.c>
+  #include "Fonts/glcdfont.c"
 #endif
 
 #ifdef LOAD_FONT2
-  #include <Fonts/Font16.h>
+  #include "Fonts/Font16.h"
 #endif
 
 #ifdef LOAD_FONT4
-  #include <Fonts/Font32rle.h>
+  #include "Fonts/Font32rle.h"
   #define LOAD_RLE
 #endif
 
 #ifdef LOAD_FONT6
-  #include <Fonts/Font64rle.h>
+  #include "Fonts/Font64rle.h"
   #ifndef LOAD_RLE
     #define LOAD_RLE
   #endif
 #endif
 
 #ifdef LOAD_FONT7
-  #include <Fonts/Font7srle.h>
+  #include "Fonts/Font7srle.h"
   #ifndef LOAD_RLE
     #define LOAD_RLE
   #endif
 #endif
 
 #ifdef LOAD_FONT8
-  #include <Fonts/Font72rle.h>
+  #include "Fonts/Font72rle.h"
   #ifndef LOAD_RLE
     #define LOAD_RLE
   #endif
@@ -63,7 +63,7 @@
 #include <Arduino.h>
 #include <Print.h>
 
-#include <Fonts/GFXFF/gfxfont.h>
+#include "Fonts/GFXFF/gfxfont.h"
 
 // Swap any type
 template <typename T> static inline void

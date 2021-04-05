@@ -11,7 +11,7 @@ const int PCF_1_IRQ_PIN = 18;
 uint16_t pcf_1_status = 65535; //all pins high
 
 //TFT screen routine
-#include "lib/TFT_HX8357.h"
+#include "lib/TFT_HX8357.cpp"
 TFT_HX8357 tft = TFT_HX8357();
 
 //pinChangeInerrupts routine. Used this because of exhausted hardware interrupts
@@ -75,7 +75,7 @@ struct __attribute__((__packed__)) State {
   long int    fingerprint;                          //hash-like substitute. @ToDo: rework me later
 } state;
 
-bool state_changed = false;
+bool state_changed = true;
 
 //LED params
 // pin 11 of 74HC595 (SHCP)
@@ -151,6 +151,7 @@ void loop() {
   if (state_changed) {
     updateDisplay();
     echoStruct();
+    state_changed = false;
   }
 
   if (PCF_1_FLAG) {
@@ -226,11 +227,11 @@ void echoStruct() {
   //    print_binary(state.Step, 16);
   //  Serial.print("\t");
 
-  //  Serial.print(pcf_1_status, BIN);
-  //  print_binary(pcf_1_status, 16);
+  //    Serial.print(pcf_1_status, BIN);
+  print_binary(pcf_1_status, 16);
 
   //  Serial.print(state.fingerprint);
-  //  Serial.println("==================");
+  Serial.println("==================");
   //  Serial.println("");
 }
 
@@ -329,12 +330,18 @@ void processPCF() {
     stepDown();
   }
 
+  //process SQL On/Off button
+  if (!bitRead(pcf_1_status, 8))
+  {
+    state.SquelchEnable = !state.SquelchEnable;
+  }
+
   state_changed = true;
 }
 
 void encoder_a_isr() {
   uint8_t n = digitalRead(encoderAPinA);
-  if ((encoderAPinALast == LOW) && (n == HIGH)) {
+  if ((encoderAPinALast == LOW) && (n == HIGH) && state.SquelchEnable) {
     if (digitalRead(encoderAPinB) == LOW) {
       SQLUp();
       state_changed = true; // Changed the value
@@ -347,17 +354,42 @@ void encoder_a_isr() {
 }
 
 void updateDisplay() {
-  tft.setCursor(0, 0, 2);
-  //  tft.fillScreen(TFT_BLACK);
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  printSQL();
+  printMode();
+}
+
+void printMode() {
   tft.setTextSize(2);
-  tft.setTextFont(2);
+  tft.setTextFont(3);
   char buffer[50];
-  sprintf(buffer, "SQL: %d", state.SquelchLevel);
-  tft.println(buffer);
-  memset(buffer, 0, 50);
-  sprintf(buffer, "Mode: %s", state.VfoMode ? "VFO" : "Memory");
-  tft.print(buffer);
+  uint16_t color;
+
+  
+    sprintf(buffer, "Mode: %s", state.VfoMode ? "VFO" : "Memory");
+    tft.setTextColor(TFT_WHITE);
+    tft.drawRoundRect(289, 0, 188, 34, 5, TFT_WHITE ); //X, Y, W, H, radius, Color
+    tft.fillRoundRect(290, 1, 184, 32, 5, TFT_BLACK); //black mask
+    tft.drawString(buffer, 296, 0, 2); //string, Y, Y, FontNumber
+}
+
+void printSQL() {
+  tft.setTextSize(2);
+  tft.setTextFont(3);
+  char buffer[50];
+  uint16_t color;
+
+  if (state.SquelchEnable) {
+    sprintf(buffer, "SQL: %d", state.SquelchLevel);
+    color = TFT_WHITE;
+  } else {
+    sprintf(buffer, "SQL: OFF");
+    color = TFT_RED;
+  }
+
+  tft.drawRoundRect(0, 0, 120, 34, 5, color);
+  tft.fillRoundRect(1, 1, 118, 32, 5, TFT_BLACK);  // Black mask
+  tft.setTextColor(color);
+  tft.drawString(buffer, 6, 0, 2); //string, X, Y, Font number
 }
 
 //move place highlighter one step upward
