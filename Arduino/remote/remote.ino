@@ -74,6 +74,8 @@ struct __attribute__((__packed__)) State {
   //non essential params
   uint16_t    Step                    = 16;         //trailing four bits are reserved for aux and does not mapped to step place highlighter
   bool        VfoMode                 = false;      //
+  bool        Att                     = false;      //Attenuator mode
+  
 
   long int    fingerprint;                          //hash-like substitute. @ToDo: rework me later
 } state;
@@ -346,6 +348,12 @@ void processPCF() {
     state.AudioMute = !state.AudioMute;
   }
 
+  //process Attenuator Toggle button
+  if(!bitRead(pcf_1_status, 6))
+  {
+    state.Att = !state.Att;
+  }
+
   state_changed = true;
 }
 
@@ -382,7 +390,9 @@ void encoder_b_isr() {
 void updateDisplay() {
   printSQL();
   printMode();
-  printVol();  
+  printVol();
+
+  printAtt();
 }
 
 void printMode() {
@@ -435,6 +445,25 @@ void printVol(){
   tft.fillRoundRect(1, 39, 118, 32, 5, TFT_BLACK);
   tft.setTextColor(color);
   tft.drawString(buffer, 6, 38, 2);
+}
+
+void printAtt(){
+  tft.setTextSize(2);
+  tft.setTextFont(3);
+  char buffer[10];
+  uint16_t color;
+  sprintf(buffer, "Att");
+
+  if(!state.Att){
+    color = TFT_WHITE;
+  } else {
+    color = TFT_RED;
+  }
+
+  tft.drawRoundRect(0, 286, 70, 34, 5, color);
+  tft.fillRoundRect(1, 287, 68, 32, 5, TFT_BLACK);
+  tft.setTextColor(color);
+  tft.drawString(buffer, 16, 286, 2);
 }
 
 //move place highlighter one step upward
