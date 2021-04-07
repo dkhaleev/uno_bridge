@@ -20,7 +20,10 @@ TFT_HX8357 tft = TFT_HX8357();
 //Rotary encoder routine
 int encoderAPinA = 66; //A12
 int encoderAPinB = 67; //A13
+int encoderBPinA = 68; //A14
+int encoderBPinB = 69; //A15
 uint8_t encoderAPinALast = LOW;
+uint8_t encoderBPinALast = LOW;
 
 struct __attribute__((__packed__)) State {
   int8_t      Demodulator             = 0; //Demodulator type,        Enum:
@@ -132,11 +135,12 @@ void setup() {
   pinMode(PCF_1_IRQ_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(PCF_1_IRQ_PIN), pcf_isr, FALLING);
 
-  //  pinMode(66, INPUT_PULLUP);
-  //  pinMode(67, INPUT_PULLUP);
-  //  pinMode(68, INPUT_PULLUP);
-  //  pinMode(69, INPUT_PULLUP);
+  //  pinMode(66, INPUT_PULLUP); Encoder-A (SQL)
+  //  pinMode(67, INPUT_PULLUP); Encoder-A (SQL)
+  //  pinMode(68, INPUT_PULLUP); Encoder-B (Vol)
+  //  pinMode(69, INPUT_PULLUP); Encoder-B (Vol)
   attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(66), encoder_a_isr, CHANGE);
+  attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(68), encoder_b_isr, CHANGE);
   //  attachInterrupt(digitalPinToInterrupt(A12), encoder_isr, FALLING);
 
   //TFT init
@@ -336,9 +340,16 @@ void processPCF() {
     state.SquelchEnable = !state.SquelchEnable;
   }
 
+  //process Mute On/Off button
+  if(!bitRead(pcf_1_status, 11))
+  {
+    state.AudioMute = !state.AudioMute;
+  }
+
   state_changed = true;
 }
 
+//process SQL Encoder Inc/Dec
 void encoder_a_isr() {
   uint8_t n = digitalRead(encoderAPinA);
   if ((encoderAPinALast == LOW) && (n == HIGH) && state.SquelchEnable) {
@@ -353,9 +364,25 @@ void encoder_a_isr() {
   encoderAPinALast = n;
 }
 
+//process Volume Encoder Inc/Dec
+void encoder_b_isr() {
+  uint8_t n = digitalRead(encoderBPinA);
+  if ((encoderBPinALast == LOW) && (n == HIGH) && !state.AudioMute) {
+    if (digitalRead(encoderBPinB) == LOW) {
+      volDown();
+      state_changed = true; // Changed the value
+    } else {
+      volUp();
+      state_changed = true; // Changed the value
+    }
+  }
+  encoderBPinALast = n;
+}
+
 void updateDisplay() {
   printSQL();
   printMode();
+  printVol();  
 }
 
 void printMode() {
@@ -363,13 +390,11 @@ void printMode() {
   tft.setTextFont(3);
   char buffer[50];
   uint16_t color;
-
-  
-    sprintf(buffer, "Mode: %s", state.VfoMode ? "VFO" : "Memory");
-    tft.setTextColor(TFT_WHITE);
-    tft.drawRoundRect(289, 0, 188, 34, 5, TFT_WHITE ); //X, Y, W, H, radius, Color
-    tft.fillRoundRect(290, 1, 184, 32, 5, TFT_BLACK); //black mask
-    tft.drawString(buffer, 296, 0, 2); //string, Y, Y, FontNumber
+  sprintf(buffer, "Mode: %s", state.VfoMode ? "VFO" : "Memory");
+  tft.setTextColor(TFT_WHITE);
+  tft.drawRoundRect(289, 0, 188, 34, 5, TFT_WHITE ); //X, Y, W, H, radius, Color
+  tft.fillRoundRect(290, 1, 184, 32, 5, TFT_BLACK); //black mask
+  tft.drawString(buffer, 296, 0, 2); //string, Y, Y, FontNumber
 }
 
 void printSQL() {
@@ -390,6 +415,26 @@ void printSQL() {
   tft.fillRoundRect(1, 1, 118, 32, 5, TFT_BLACK);  // Black mask
   tft.setTextColor(color);
   tft.drawString(buffer, 6, 0, 2); //string, X, Y, Font number
+}
+
+void printVol(){
+  tft.setTextSize(2);
+  tft.setTextFont(3);
+  char buffer[50];
+  uint16_t color;
+
+  if(!state.AudioMute){
+    sprintf(buffer, "Vol: %d", state.AudioVolume);
+    color = TFT_WHITE;
+  } else {
+    sprintf(buffer, "Vol: OFF");
+    color = TFT_RED;
+  }
+
+  tft.drawRoundRect(0, 38, 120, 34, 5, color);
+  tft.fillRoundRect(1, 39, 118, 32, 5, TFT_BLACK);
+  tft.setTextColor(color);
+  tft.drawString(buffer, 6, 38, 2);
 }
 
 //move place highlighter one step upward
@@ -419,6 +464,18 @@ void SQLUp() {
 void SQLDown() {
   if (state.SquelchLevel > 0) {
     state.SquelchLevel--;
+  }
+}
+
+void volUp(){
+  if (state.AudioVolume < 100) {
+    state.AudioVolume++;
+  }
+}
+
+void volDown(){
+  if (state.AudioVolume > 0){
+    state.AudioVolume--;  
   }
 }
 
