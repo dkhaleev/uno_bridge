@@ -14,6 +14,9 @@ uint16_t pcf_1_status = 65535; //all pins high
 #include "lib/TFT_HX8357.cpp"
 TFT_HX8357 tft = TFT_HX8357();
 
+//#include "lib/rotary.cpp"
+//Rotary r = Rotary(4, 3);
+
 //pinChangeInerrupts routine. Used this because of exhausted hardware interrupts
 #include "PinChangeInterrupt.h"
 
@@ -22,8 +25,11 @@ int encoderAPinA = 66; //A12
 int encoderAPinB = 67; //A13
 int encoderBPinA = 68; //A14
 int encoderBPinB = 69; //A15
+int encoderMPinA = 65;
+int encoderMPinB = 64;
 uint8_t encoderAPinALast = LOW;
 uint8_t encoderBPinALast = LOW;
+uint8_t encoderMPinALast = LOW;
 
 struct __attribute__((__packed__)) State {
   int8_t      Demodulator             = 0; //Demodulator type,        Enum:
@@ -75,12 +81,14 @@ struct __attribute__((__packed__)) State {
   uint16_t    Step                    = 16;         //trailing four bits are reserved for aux and does not mapped to step place highlighter
   bool        VfoMode                 = false;      //
   bool        Att                     = false;      //Attenuator mode
-  
+  bool        Preamp                  = false;      //Pre-amp mode
 
   long int    fingerprint;                          //hash-like substitute. @ToDo: rework me later
 } state;
 
 bool state_changed = true;
+bool update_display = true;
+//@todo: add dynamic state change flag system or just spread a bunch of bool flags
 
 //LED params
 // pin 11 of 74HC595 (SHCP)
@@ -137,13 +145,16 @@ void setup() {
   pinMode(PCF_1_IRQ_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(PCF_1_IRQ_PIN), pcf_isr, FALLING);
 
-  //  pinMode(66, INPUT_PULLUP); Encoder-A (SQL)
-  //  pinMode(67, INPUT_PULLUP); Encoder-A (SQL)
-  //  pinMode(68, INPUT_PULLUP); Encoder-B (Vol)
-  //  pinMode(69, INPUT_PULLUP); Encoder-B (Vol)
-  attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(66), encoder_a_isr, CHANGE);
-  attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(68), encoder_b_isr, CHANGE);
-  //  attachInterrupt(digitalPinToInterrupt(A12), encoder_isr, FALLING);
+  //  pinMode(encoderAPinA, INPUT_PULLUP); Encoder-A (SQL)
+  //  pinMode(encoderAPinB, INPUT_PULLUP); Encoder-A (SQL)
+  //  pinMode(encoderBPinA, INPUT_PULLUP); Encoder-B (Vol)
+  //  pinMode(encoderBPinB, INPUT_PULLUP); Encoder-B (Vol)
+  attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(encoderAPinA), encoder_a_isr, CHANGE);
+  attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(encoderBPinA), encoder_b_isr, CHANGE);
+  pinMode(encoderMPinA, INPUT_PULLUP); //Main Encoder
+  pinMode(encoderMPinB, INPUT_PULLUP); //Main Encoder
+  attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(encoderMPinA), encoder_m_isr, CHANGE);
+  attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(encoderMPinB), encoder_m_isr, CHANGE);
 
   //TFT init
   tft.init();
@@ -155,9 +166,13 @@ void loop() {
   state.fingerprint = random();
 
   if (state_changed) {
-    updateDisplay();
     echoStruct();
     state_changed = false;
+  }
+
+  if (update_display) {
+    updateDisplay();
+    update_display = false;
   }
 
   if (PCF_1_FLAG) {
@@ -185,60 +200,50 @@ void loop() {
 }
 
 void echoStruct() {
-  //  Serial.print(state.Demodulator);
-  //  Serial.print("\t");
-  //  Serial.print(state.WfmDeemphasisMode);
-  //  Serial.print("\t");
-  //  Serial.print(state.NoiseBlankerMode);
-  //  Serial.print("\t");
-  //  Serial.print(state.AgcMode);
-  //  Serial.print("\t");
-  //  Serial.print(state.AgcThreshold);
-  //  Serial.print("\t");
-  //  Serial.print(state.NoiseBlankerLevel);
-  //  Serial.print("\t");
-  //  Serial.print(state.NoiseReductionLevel);
-  //  Serial.print("\t");
-  //  Serial.print(state.CwPeakFilterThreshold);
-  //  Serial.print("\t");
-  //  Serial.print(state.AudioVolume);
-  //  Serial.print("\t");
-  //  Serial.print(state.SP1MinPower);
-  //  Serial.print("\t");
-  //  Serial.print(state.VfoFrequency);
-  //  Serial.print("\t");
-  //  Serial.print(state.CenterFrequency);
-  //  Serial.print("\t");
-  //  Serial.print(state.SP1MinFrequency);
-  //  Serial.print("\t");
-  //  Serial.print(state.SP1MaxFrequency);
-  //  Serial.print("\t");
-  //  Serial.print(state.MPXLevel);
-  //  Serial.print("\t");
-  //  Serial.print(state.FilterBandwidth);
-  //  Serial.print("\t");
-  //  Serial.print(state.SquelchLevel);
-  //  Serial.print("\t");
-  //  Serial.print(state.SquelchEnable);
-  //  Serial.print("\t");
-  //  Serial.print(state.FmNoiseReductionEnable);
-  //  Serial.print("\t");
-  //  Serial.print(state.AudioMute);
-  //  Serial.print("\t");
-  //  Serial.print(state.BiasTEnable);
-  //  Serial.print("\t");
-
-  //  print_binary(state.Step, 16);
-  //  Serial.print(state.Step, BIN);
-  //    print_binary(state.Step, 16);
-  //  Serial.print("\t");
-
-  //    Serial.print(pcf_1_status, BIN);
-  print_binary(pcf_1_status, 16);
-
-  //  Serial.print(state.fingerprint);
-  Serial.println("==================");
-  //  Serial.println("");
+    Serial.print(state.Demodulator);
+    Serial.print("\t");
+    Serial.print(state.WfmDeemphasisMode);
+    Serial.print("\t");
+    Serial.print(state.NoiseBlankerMode);
+    Serial.print("\t");
+    Serial.print(state.AgcMode);
+    Serial.print("\t");
+    Serial.print(state.AgcThreshold);
+    Serial.print("\t");
+    Serial.print(state.NoiseBlankerLevel);
+    Serial.print("\t");
+    Serial.print(state.NoiseReductionLevel);
+    Serial.print("\t");
+    Serial.print(state.CwPeakFilterThreshold);
+    Serial.print("\t");
+    Serial.print(state.AudioVolume);
+    Serial.print("\t");
+    Serial.print(state.SP1MinPower);
+    Serial.print("\t");
+    Serial.print(state.VfoFrequency);
+    Serial.print("\t");
+    Serial.print(state.CenterFrequency);
+    Serial.print("\t");
+    Serial.print(state.SP1MinFrequency);
+    Serial.print("\t");
+    Serial.print(state.SP1MaxFrequency);
+    Serial.print("\t");
+    Serial.print(state.MPXLevel);
+    Serial.print("\t");
+    Serial.print(state.FilterBandwidth);
+    Serial.print("\t");
+    Serial.print(state.SquelchLevel);
+    Serial.print("\t");
+    Serial.print(state.SquelchEnable);
+    Serial.print("\t");
+    Serial.print(state.FmNoiseReductionEnable);
+    Serial.print("\t");
+    Serial.print(state.AudioMute);
+    Serial.print("\t");
+    Serial.print(state.BiasTEnable);
+    Serial.print("\t");
+    Serial.print(state.fingerprint);
+    Serial.println("");
 }
 
 void parseStruct(String string) {
@@ -310,6 +315,7 @@ void processPCF() {
   if (!bitRead(pcf_1_status, 0))
   {
     state.AudioMute = !state.AudioMute;
+    update_display = true;
   }
 
   //process Bias-T button toggle
@@ -322,6 +328,7 @@ void processPCF() {
   if (!bitRead(pcf_1_status, 14))
   {
     state.VfoMode = !state.VfoMode;
+    update_display = true;
   }
 
   //process StepUp button
@@ -343,15 +350,24 @@ void processPCF() {
   }
 
   //process Mute On/Off button
-  if(!bitRead(pcf_1_status, 11))
+  if (!bitRead(pcf_1_status, 11))
   {
     state.AudioMute = !state.AudioMute;
+    update_display = true;
   }
 
   //process Attenuator Toggle button
-  if(!bitRead(pcf_1_status, 6))
+  if (!bitRead(pcf_1_status, 6))
   {
     state.Att = !state.Att;
+    update_display = true;
+  }
+
+  //process Pre-Amp Toggle button
+  if (!bitRead(pcf_1_status, 5))
+  {
+    state.Preamp = !state.Preamp;
+    update_display = true;
   }
 
   state_changed = true;
@@ -363,11 +379,11 @@ void encoder_a_isr() {
   if ((encoderAPinALast == LOW) && (n == HIGH) && state.SquelchEnable) {
     if (digitalRead(encoderAPinB) == LOW) {
       SQLUp();
-      state_changed = true; // Changed the value
     } else {
       SQLDown();
-      state_changed = true; // Changed the value
     }
+    state_changed = true; // Changed the value
+    update_display = true;
   }
   encoderAPinALast = n;
 }
@@ -378,13 +394,27 @@ void encoder_b_isr() {
   if ((encoderBPinALast == LOW) && (n == HIGH) && !state.AudioMute) {
     if (digitalRead(encoderBPinB) == LOW) {
       volDown();
-      state_changed = true; // Changed the value
     } else {
       volUp();
-      state_changed = true; // Changed the value
     }
+    state_changed = true; // Changed the value
+    update_display = true;
   }
   encoderBPinALast = n;
+}
+
+//process main encoder
+void encoder_m_isr() {
+  uint8_t n = digitalRead(encoderMPinA);
+  if ((encoderMPinALast == HIGH) && (n == LOW)) {
+    if (digitalRead(encoderMPinB) == HIGH) {
+      mainEncInc();
+    } else {
+      mainEncDec();
+    }
+    state_changed = true; // Changed the value
+  }
+  encoderMPinALast = n;
 }
 
 void updateDisplay() {
@@ -393,6 +423,7 @@ void updateDisplay() {
   printVol();
 
   printAtt();
+  printPreamp();
 }
 
 void printMode() {
@@ -427,13 +458,13 @@ void printSQL() {
   tft.drawString(buffer, 6, 0, 2); //string, X, Y, Font number
 }
 
-void printVol(){
+void printVol() {
   tft.setTextSize(2);
   tft.setTextFont(3);
   char buffer[50];
   uint16_t color;
 
-  if(!state.AudioMute){
+  if (!state.AudioMute) {
     sprintf(buffer, "Vol: %d", state.AudioVolume);
     color = TFT_WHITE;
   } else {
@@ -447,14 +478,14 @@ void printVol(){
   tft.drawString(buffer, 6, 38, 2);
 }
 
-void printAtt(){
+void printAtt() {
   tft.setTextSize(2);
   tft.setTextFont(3);
   char buffer[10];
   uint16_t color;
   sprintf(buffer, "Att");
 
-  if(!state.Att){
+  if (!state.Att) {
     color = TFT_WHITE;
   } else {
     color = TFT_RED;
@@ -464,6 +495,25 @@ void printAtt(){
   tft.fillRoundRect(1, 287, 68, 32, 5, TFT_BLACK);
   tft.setTextColor(color);
   tft.drawString(buffer, 16, 286, 2);
+}
+
+void printPreamp() {
+  tft.setTextSize(2);
+  tft.setTextFont(3);
+  char buffer[10];
+  uint16_t color;
+  sprintf(buffer, "Preamp");
+
+  if (!state.Preamp) {
+    color = TFT_WHITE;
+  } else {
+    color = TFT_RED;
+  }
+
+  tft.drawRoundRect(76, 286, 120, 34, 5, color);
+  tft.fillRoundRect(77, 287, 118, 32, 5, TFT_BLACK);
+  tft.setTextColor(color);
+  tft.drawString(buffer, 92, 286, 2);
 }
 
 //move place highlighter one step upward
@@ -496,18 +546,71 @@ void SQLDown() {
   }
 }
 
-void volUp(){
+void volUp() {
   if (state.AudioVolume < 100) {
     state.AudioVolume++;
   }
 }
 
-void volDown(){
-  if (state.AudioVolume > 0){
-    state.AudioVolume--;  
+void volDown() {
+  if (state.AudioVolume > 0) {
+    state.AudioVolume--;
   }
 }
 
+void mainEncInc() {
+  uint16_t factor = castStep();
+  state.CenterFrequency += factor;
+}
+
+void mainEncDec() {
+  uint16_t factor = castStep();
+  state.CenterFrequency -= factor;
+}
+
+uint16_t castStep() {
+  uint16_t factor = 0;
+  switch (state.Step) {
+    case 16:
+      factor = 1;
+      break;
+    case 32:
+      factor = 10;
+      break;
+    case 64:
+      factor = 100;
+      break;
+    case 128:
+      factor = 1000;
+      break;
+    case 256:
+      factor = 10000;
+      break;
+      //    case 512:
+      //      factor = 100000;
+      //      break;
+      //    case 1024:
+      //      factor = 1000000;
+      //      break;
+      //    case 2048:
+      //      factor = 10000000;
+      //      break;
+      //    case 4096:
+      //      factor = 100000000;
+      //      break;
+      //    case 8192:
+      //      factor = 1000000000;
+      //      break;
+      //    case 16384:
+      //      factor = 10000000000;
+      //      break;
+      //    case 32768:
+      //      factor = 100000000000;
+      //      break;
+  }
+
+  return factor;
+}
 //--------------service helper methods--------------
 //print value in binary-way.
 void print_binary(int v, int num_places)

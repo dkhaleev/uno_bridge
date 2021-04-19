@@ -137,6 +137,7 @@
 #define TFT_ORANGE      0xFD20
 #define TFT_GREENYELLOW 0xAFE5
 #define TFT_PINK        0xF81F
+#define TFT_GREY 		0x5AEB
 
 // Color definitions for backwards compatibility
 #define HX8357_BLACK       0x0000
