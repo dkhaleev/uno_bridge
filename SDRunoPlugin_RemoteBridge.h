@@ -39,17 +39,51 @@ public:
 	virtual void HandleEvent(const UnoEvent& ev) override;
 
 	struct State {
-		int8_t      DT = 0;				//Demodulator type,        Enum:
-										//0 - 
-										//1 -
-										//2 -
-										//3 -
-										//...
-										//x -
-		long int    VFOFreq = 0;		//VFO Freq,                Hz
-		long int    CFreq = 0;			//Center Frequency,        Hz
-		int         FB = 0;				//Filter bandwith,         Hz
-		long int	fingerprint;		//random fingerprint. 
+		int8_t      Demodulator				= 0;//Demodulator type,        Enum:
+											//    DemodulatorNone = 0,
+											//    DemodulatorAM = 1,
+											//    DemodulatorSAM = 2,
+											//    DemodulatorNFM = 3,
+											//    DemodulatorMFM = 4,
+											//    DemodulatorWFM = 5,
+											//    DemodulatorSWFM = 6,
+											//    DemodulatorDSB = 7,
+											//    DemodulatorLSB = 8,
+											//    DemodulatorUSB = 9,
+											//    DemodulatorCW = 10,
+											//    DemodulatorDigital = 11,
+											//    DemodulatorDAB = 12,
+											//    DemodulatorIQOUT = 13
+		int8_t      WfmDeemphasisMode		= 0;
+											//    DeemphasisNone = 0,
+											//    Deemphasis50us = 1,
+											//    Deemphasis75us = 2,
+		int8_t      NoiseBlankerMode		= 0;
+											//    NoiseBlankerOff = 0,
+											//    NoiseBlankerBwWide = 1,
+											//    NoiseBlankerBwNarrow = 2
+		int8_t      AgcMode					= 0;
+											//    AGCModeOff = 0,
+											//    AGCModeSlow = 1,
+											//    AGCModeMedium = 2,
+											//    AGCModeFast = 3
+		int8_t      AgcThreshold			= 0;
+		int8_t      NoiseBlankerLevel		= 0;
+		int8_t      NoiseReductionLevel		= 0;
+		int8_t      CwPeakFilterThreshold	= 0;
+		int8_t      AudioVolume				= 0;
+		int8_t      SP1MinPower				= 0;
+		long int    VfoFrequency			= 0; //VFO Freq,                Hz
+		long int    CenterFrequency			= 0;
+		long int    SP1MaxFrequency			= 0;
+		long int    MPXLevel				= 0;
+		int         FilterBandwidth			= 0; //Filter bandwith,         Hz
+		int         SquelchLevel			= 0;
+		bool        SquelchEnable			= false;
+		bool        FmNoiseReductionEnable	= false;
+		bool        AudioMute				= false;
+		bool        BiasTEnable				= false;
+		long int    fingerprint;
 	} state;
 
 private:

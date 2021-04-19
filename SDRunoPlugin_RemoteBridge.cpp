@@ -96,14 +96,31 @@ void SDRunoPlugin_RemoteBridge::WorkerFunction()
 				{
 					error = "receiver peeked successfully";
 					char buffer[300];
-					Serial.readString(buffer, '\n', 300, 0);
+					//Serial.readString(buffer, '\n', 300, 10);
+					Serial.readStringNoTimeOut(buffer, '\n', 300);					
 					//Serial.readBytes(buffer, 300, 200, 200);
 					sscanf(buffer, 
-						"%hu %lu %lu %hu %lu", 
-						&state.DT, 
-						&state.VFOFreq, 
-						&state.CFreq, 
-						&state.FB, 
+						"%d %d %d %d %d %d %d %d %d %d %lu %lu %lu %lu %lu %d %d %b %b %b %b %lu", 
+						&state.Demodulator, 
+						&state.WfmDeemphasisMode,
+						&state.NoiseBlankerMode,
+						&state.AgcMode,
+						&state.AgcThreshold,
+						&state.NoiseBlankerLevel,
+						&state.NoiseReductionLevel,
+						&state.CwPeakFilterThreshold,
+						&state.AudioVolume,
+						&state.SP1MinPower,
+						&state.VfoFrequency,
+						&state.CenterFrequency,
+						&state.SP1MaxFrequency,
+						&state.MPXLevel,
+						&state.FilterBandwidth,
+						&state.SquelchLevel,
+						&state.SquelchEnable,
+						&state.FmNoiseReductionEnable,
+						&state.AudioMute,
+						&state.BiasTEnable,
 						&state.fingerprint
 					);
 					
@@ -126,19 +143,24 @@ void SDRunoPlugin_RemoteBridge::WorkerFunction()
 				}
 			}
 #ifdef DEBUG
-			DbgMsg("DT: %hu \t VFO: %lu \t CFreq: %lu \t FB: %hu \t CRC: %lu \t CCRC: %lu\r\n ", 
-				state.DT, state.VFOFreq, state.CFreq, state.FB, state.fingerprint, crc);
-			//m_controller.SetVfoFrequency(0, state.VFOFreq);
-			m_controller.SetCenterFrequency(0, state.CFreq);
+			DbgMsg("Demodulator: %hu \t VFO: %lu \t CenterFrequency: %lu \t FilterBandwidth: %hu \t CRC: %lu \t CCRC: %lu\r\n ", 
+				state.Demodulator, 
+				state.VfoFrequency, 
+				state.CenterFrequency, 
+				state.FilterBandwidth, 
+				state.fingerprint, crc);
+			//m_controller.SetVfoFrequency(0, state.VfoFrequency);
+
+			m_controller.SetCenterFrequency(0, state.CenterFrequency);
 			int vrx_num = m_controller.GetVRXCount();
 			DbgMsg("VRX Count %d", vrx_num);
-			Sleep(2000);
+			//Sleep(2000);
 #endif // DEBUG
 
 			//@todo: re-work me. 
 			//Serial.writeString(PreFormatString(
-			//	"DT: %hu \t VFO: %lu \t CFreq: %lu \t FB: %hu \t CRC: %lu\r\n ",
-			//	state.DT, state.VFOFreq, state.CFreq, state.FB, state.fingerprint
+			//	"Demodulator: %hu \t VFO: %lu \t CenterFrequency: %lu \t FilterBandwidth: %hu \t CRC: %lu\r\n ",
+			//	state.Demodulator, state.VfoFrequency, state.CenterFrequency, state.FilterBandwidth, state.fingerprint
 			//));
 		}
 	}
