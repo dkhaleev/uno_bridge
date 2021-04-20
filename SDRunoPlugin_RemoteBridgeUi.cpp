@@ -92,7 +92,7 @@ void SDRunoPlugin_RemoteBridgeUi::HandleEvent(const UnoEvent& ev)
 		DemodulatorChanged = 1,
 		BandwidthChanged = 2,
 		FrequencyChanged = 3,
-		CenterFrequencyChanged = 4,
+		
 		SampleRateChanged = 5,
 		StreamingStarted = 6,
 		StreamingStopped = 7,
@@ -115,12 +115,18 @@ void SDRunoPlugin_RemoteBridgeUi::HandleEvent(const UnoEvent& ev)
 		StepSizeChanged = 24,
 		VFOChanged = 25,
 		ClosingDown = 26,
-		SP1MinFreqChanged = 27,
+		
 		SP1MaxFreqChanged = 28,
 		BiasTEnableChanged = 29,
 		SP1MinPowerChanged = 30,
 		SP1MaxPowerChanged = 31
 		*/
+	case UnoEvent::SP1MinFreqChanged: //SP1MinFreqChanged = 27
+		m_parent.UpdateSP1MinFreq();
+		break;
+	case UnoEvent::CenterFrequencyChanged: //CenterFrequencyChanged = 4
+		m_parent.UpdateCenterFrequency();
+		break;
 	case UnoEvent::VRXCountChanged:
 #ifdef DEBUG
 		OutputDebugStringA("VRX Count Changed \r\n");

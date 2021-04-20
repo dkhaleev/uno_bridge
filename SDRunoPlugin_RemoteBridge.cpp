@@ -100,7 +100,7 @@ void SDRunoPlugin_RemoteBridge::WorkerFunction()
 					Serial.readStringNoTimeOut(buffer, '\n', 300);					
 					//Serial.readBytes(buffer, 300, 200, 200);
 					sscanf(buffer, 
-						"%d %d %d %d %d %d %d %d %d %d %lu %lu %lu %lu %lu %d %d %b %b %b %b %lu", 
+						"%d %d %d %d %d %d %d %d %d %d %lu %lu %lu %lu %lu %lu %d %d %b %b %b %b %lu", 
 						&state.Demodulator, 
 						&state.WfmDeemphasisMode,
 						&state.NoiseBlankerMode,
@@ -114,6 +114,7 @@ void SDRunoPlugin_RemoteBridge::WorkerFunction()
 						&state.VfoFrequency,
 						&state.CenterFrequency,
 						&state.SP1MaxFrequency,
+						&state.SP1MinFrequency,
 						&state.MPXLevel,
 						&state.FilterBandwidth,
 						&state.SquelchLevel,
@@ -136,24 +137,79 @@ void SDRunoPlugin_RemoteBridge::WorkerFunction()
 						OutputDebugStringA("CRC Check failed \r\n");
 #endif // DEBUG
 					}
+
+					DbgMsg("Demodulator: %hu \t VFO: %lu \t CenterFrequency: %lu \t FilterBandwidth: %hu \t CRC: %lu \t CCRC: %lu\r\n ",
+						state.Demodulator,
+						state.VfoFrequency,
+						state.CenterFrequency,
+						state.FilterBandwidth,
+						state.fingerprint, crc);
+					//m_controller.SetVfoFrequency(0, state.VfoFrequency);
+
+					m_controller.SetCenterFrequency(0, state.CenterFrequency);
+					//m_controller.SetDemodulatorType(0, (IUnoPluginController::DemodulatorType)(state.Demodulator));
+						/*&state.WfmDeemphasisMode,
+						&state.NoiseBlankerMode,
+						&state.AgcMode,
+						&state.AgcThreshold,
+						&state.NoiseBlankerLevel,
+						&state.NoiseReductionLevel,
+						&state.CwPeakFilterThreshold,
+						&state.AudioVolume,
+						&state.SP1MinPower,
+						&state.VfoFrequency,
+						&state.CenterFrequency,
+						&state.SP1MaxFrequency,
+						&state.SP1MinFrequency,
+						&state.MPXLevel,
+						&state.FilterBandwidth, */
+					m_controller.SetSquelchLevel(0, state.SquelchLevel);
+					m_controller.SetSquelchEnable(0, state.SquelchEnable);
+						/*&state.FmNoiseReductionEnable,
+						&state.AudioMute,
+						&state.BiasTEnable,
+						&state.fingerprint*/
+
 				}
 				else
 				{
 					error = "Receiver not peeked";
 				}
+				if (stateChanged) {
+					char output_buffer[300];
+					sprintf(output_buffer,
+						"%d %d %d %d %d %d %d %d %d %d %lu %lu %lu %lu %lu %lu %d %d %b %b %b %b %lu",
+						&state.Demodulator,
+						&state.WfmDeemphasisMode,
+						&state.NoiseBlankerMode,
+						&state.AgcMode,
+						&state.AgcThreshold,
+						&state.NoiseBlankerLevel,
+						&state.NoiseReductionLevel,
+						&state.CwPeakFilterThreshold,
+						&state.AudioVolume,
+						&state.SP1MinPower,
+						&state.VfoFrequency,
+						&state.CenterFrequency,
+						&state.SP1MaxFrequency,
+						&state.SP1MinFrequency,
+						&state.MPXLevel,
+						&state.FilterBandwidth,
+						&state.SquelchLevel,
+						&state.SquelchEnable,
+						&state.FmNoiseReductionEnable,
+						&state.AudioMute,
+						&state.BiasTEnable,
+						&state.fingerprint
+					);
+					Serial.writeString(output_buffer);
+					stateChanged = false;
+				}
 			}
 #ifdef DEBUG
-			DbgMsg("Demodulator: %hu \t VFO: %lu \t CenterFrequency: %lu \t FilterBandwidth: %hu \t CRC: %lu \t CCRC: %lu\r\n ", 
-				state.Demodulator, 
-				state.VfoFrequency, 
-				state.CenterFrequency, 
-				state.FilterBandwidth, 
-				state.fingerprint, crc);
-			//m_controller.SetVfoFrequency(0, state.VfoFrequency);
 
-			m_controller.SetCenterFrequency(0, state.CenterFrequency);
 			int vrx_num = m_controller.GetVRXCount();
-			DbgMsg("VRX Count %d", vrx_num);
+			//DbgMsg("VRX Count %d", vrx_num);
 			//Sleep(2000);
 #endif // DEBUG
 
@@ -243,6 +299,24 @@ void SDRunoPlugin_RemoteBridge::UpdateSampleRate()
 	sampleRate = (int)m_controller.GetSampleRate(0);
 }
 
+void SDRunoPlugin_RemoteBridge::UpdateCenterFrequency()
+{
+	state.CenterFrequency = (long int)m_controller.GetCenterFrequency(0);
+	stateChanged = true;
+
+}
+
+void SDRunoPlugin_RemoteBridge::UpdateSP1MinFreq()
+{
+	state.SP1MinFrequency = (long int)m_controller.GetSP1MinFrequency(0);
+	stateChanged = true;
+}
+
+void SDRunoPlugin_RemoteBridge::UpdateSP1MaxFreq() 
+{
+	state.SP1MaxFrequency = (long int)m_controller.GetSP1MaxFrequency(0);
+	stateChanged = true;
+}
 //@todo: process me
 /*
 Lots of handlers for events

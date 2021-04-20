@@ -45,6 +45,7 @@ public:
 		char FinalChar,
 		unsigned int MaxNbBytes,
 		const unsigned int TimeOut_ms = 0);
+	int     readStringNoTimeOut(char *String, char FinalChar, unsigned int MaxNbBytes);
 
 
 
@@ -92,7 +93,7 @@ public:
 
 private:
 	// Read a string (no timeout)
-	int     readStringNoTimeOut(char *String, char FinalChar, unsigned int MaxNbBytes);
+	//int     readStringNoTimeOut(char *String, char FinalChar, unsigned int MaxNbBytes);
 
 	HANDLE          hSerial;
 	COMMTIMEOUTS    timeouts;

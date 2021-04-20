@@ -68,7 +68,7 @@ struct __attribute__((__packed__)) State {
   int8_t      SP1MinPower             = 0;
   long int    VfoFrequency            = 0;          //VFO Freq,                Hz
   long int    CenterFrequency         = 443300000;  //Center Frequency,        Hz
-  long int    SP1MinFrequency         = 0;
+  long int    SP1MinFrequency         = 443300000;
   long int    SP1MaxFrequency         = 0;
   long int    MPXLevel                = 0;
   int         FilterBandwidth         = 4300;       //Filter bandwith,         Hz
@@ -184,18 +184,7 @@ void loop() {
   String str = Serial.readStringUntil('\n');
 
   if (str.length() > 0) {
-    //      parseStruct(str);
-    //    Serial.println("Read value");
-    //    Serial.print(state.Demodulator);
-    //    Serial.print("\t");
-    //    Serial.print(state.VfoFrequency);
-    //    Serial.print("\t");
-    //    Serial.print(state.CenterFrequency);
-    //    Serial.print("\t");
-    //    Serial.print(state.FilterBandwidth);
-    //    Serial.print("\t");
-    //    Serial.print(state.fingerprint);
-    //    Serial.println("");
+    parseStruct(str);
   }
 }
 
@@ -248,12 +237,12 @@ void echoStruct() {
 
 void parseStruct(String string) {
   const char *str = string.c_str();
-  sscanf(str, "%hu %lu %lu %hu %lu",
-         &state.Demodulator,
-         &state.VfoFrequency,
-         &state.CenterFrequency,
-         &state.FilterBandwidth,
-         &state.fingerprint);
+//  sscanf(str, "%hu %lu %lu %hu %lu",
+//         &state.Demodulator,
+//         &state.VfoFrequency,
+//         &state.CenterFrequency,
+//         &state.FilterBandwidth,
+//         &state.fingerprint);
 }
 
 //interrupt service routine by Timer1 interrupt signal
@@ -311,12 +300,12 @@ void processPCF() {
   PCF_1_FLAG = false;
   pcf_1_status = PCF_1.read16();
 
-  //process Audio Mute button toggle
-  if (!bitRead(pcf_1_status, 0))
-  {
-    state.AudioMute = !state.AudioMute;
-    update_display = true;
-  }
+  //process Audio Mute button toggle //Red!
+//  if (!bitRead(pcf_1_status, 0))
+//  {
+//    state.AudioMute = !state.AudioMute;
+//    update_display = true;
+//  }
 
   //process Bias-T button toggle
   if (!bitRead(pcf_1_status, 1))
@@ -347,6 +336,7 @@ void processPCF() {
   if (!bitRead(pcf_1_status, 8))
   {
     state.SquelchEnable = !state.SquelchEnable;
+    update_display = true;
   }
 
   //process Mute On/Off button
@@ -452,8 +442,8 @@ void printSQL() {
     color = TFT_RED;
   }
 
-  tft.drawRoundRect(0, 0, 120, 34, 5, color);
-  tft.fillRoundRect(1, 1, 118, 32, 5, TFT_BLACK);  // Black mask
+  tft.drawRoundRect(0, 0, 130, 34, 5, color);
+  tft.fillRoundRect(1, 1, 128, 32, 5, TFT_BLACK);  // Black mask
   tft.setTextColor(color);
   tft.drawString(buffer, 6, 0, 2); //string, X, Y, Font number
 }
@@ -472,8 +462,8 @@ void printVol() {
     color = TFT_RED;
   }
 
-  tft.drawRoundRect(0, 38, 120, 34, 5, color);
-  tft.fillRoundRect(1, 39, 118, 32, 5, TFT_BLACK);
+  tft.drawRoundRect(0, 38, 130, 34, 5, color);
+  tft.fillRoundRect(1, 39, 128, 32, 5, TFT_BLACK);
   tft.setTextColor(color);
   tft.drawString(buffer, 6, 38, 2);
 }
@@ -535,7 +525,8 @@ void stepDown() {
 }
 
 void SQLUp() {
-  if (state.SquelchLevel < 100) {
+  if (state.SquelchLevel < 220) //max value that affects SQL bar 
+  {
     state.SquelchLevel++;
   }
 }

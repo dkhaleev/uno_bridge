@@ -30,6 +30,10 @@ public:
 	virtual const char* GetPluginName() const override { return "SDRuno Plugin Example"; }
 
 	void UpdateSampleRate();
+	//controller
+	void UpdateCenterFrequency();
+	void UpdateSP1MinFreq();
+	void UpdateSP1MaxFreq();
 	//@todo: process me
 	/*
 	Lots of handlers for events
@@ -76,6 +80,7 @@ public:
 		long int    VfoFrequency			= 0; //VFO Freq,                Hz
 		long int    CenterFrequency			= 0;
 		long int    SP1MaxFrequency			= 0;
+		long int	SP1MinFrequency			= 0;
 		long int    MPXLevel				= 0;
 		int         FilterBandwidth			= 0; //Filter bandwith,         Hz
 		int         SquelchLevel			= 0;
@@ -90,6 +95,7 @@ private:
 	void WorkerFunction();
 	bool m_started;
 	bool isConnected = false;
+	bool stateChanged = false;
 	Serial Serial;
 	std::thread* m_worker;
 	std::mutex m_lock;
@@ -97,4 +103,6 @@ private:
 	std::string error;
 	SDRunoPlugin_RemoteBridgeUi m_form;
 	int sampleRate;
+
+
 };
