@@ -64,11 +64,11 @@ struct __attribute__((__packed__)) State {
   int8_t      NoiseBlankerLevel       = 0;
   int8_t      NoiseReductionLevel     = 0;
   int8_t      CwPeakFilterThreshold   = 0;
-  int8_t      AudioVolume             = 0;
+  int         AudioVolume             = 0;
   int8_t      SP1MinPower             = 0;
   long int    VfoFrequency            = 0;          //VFO Freq,                Hz
   long int    CenterFrequency         = 443300000;  //Center Frequency,        Hz
-  long int    SP1MinFrequency         = 443300000;
+  long int    SP1MinFrequency         = 0;
   long int    SP1MaxFrequency         = 0;
   long int    MPXLevel                = 0;
   int         FilterBandwidth         = 4300;       //Filter bandwith,         Hz
@@ -254,12 +254,12 @@ void fillRegisters_isr() {
 
     digitalWrite(digit_clock_pin, LOW);
 
-    //highlight mute button
-    if (state.AudioMute) {
-      bitSet(temporaryStep, 3);
-    } else {
-      bitClear(temporaryStep, 3);
-    }
+//    //highlight mute button
+//    if (state.AudioMute) {
+//      bitSet(temporaryStep, 3);
+//    } else {
+//      bitClear(temporaryStep, 3);
+//    }
 
     //highlight bias-T button
     if (state.BiasTEnable) {
@@ -538,7 +538,8 @@ void SQLDown() {
 }
 
 void volUp() {
-  if (state.AudioVolume < 100) {
+  if (state.AudioVolume < 220) //max value that affects Volume bar 
+  {
     state.AudioVolume++;
   }
 }

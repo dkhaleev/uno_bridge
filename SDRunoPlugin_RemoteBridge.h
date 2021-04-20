@@ -75,7 +75,7 @@ public:
 		int8_t      NoiseBlankerLevel		= 0;
 		int8_t      NoiseReductionLevel		= 0;
 		int8_t      CwPeakFilterThreshold	= 0;
-		int8_t      AudioVolume				= 0;
+		int         AudioVolume				= 0; //220 is max of the bar value
 		int8_t      SP1MinPower				= 0;
 		long int    VfoFrequency			= 0; //VFO Freq,                Hz
 		long int    CenterFrequency			= 0;
@@ -83,7 +83,7 @@ public:
 		long int	SP1MinFrequency			= 0;
 		long int    MPXLevel				= 0;
 		int         FilterBandwidth			= 0; //Filter bandwith,         Hz
-		int         SquelchLevel			= 0;
+		int         SquelchLevel			= 0; //220 is max of the bar value
 		bool        SquelchEnable			= false;
 		bool        FmNoiseReductionEnable	= false;
 		bool        AudioMute				= false;

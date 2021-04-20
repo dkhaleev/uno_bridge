@@ -96,9 +96,7 @@ void SDRunoPlugin_RemoteBridge::WorkerFunction()
 				{
 					error = "receiver peeked successfully";
 					char buffer[300];
-					//Serial.readString(buffer, '\n', 300, 10);
 					Serial.readStringNoTimeOut(buffer, '\n', 300);					
-					//Serial.readBytes(buffer, 300, 200, 200);
 					sscanf(buffer, 
 						"%d %d %d %d %d %d %d %d %d %d %lu %lu %lu %lu %lu %lu %d %d %b %b %b %b %lu", 
 						&state.Demodulator, 
@@ -125,14 +123,14 @@ void SDRunoPlugin_RemoteBridge::WorkerFunction()
 						&state.fingerprint
 					);
 					
-					crc = Serial.crc8((byte*)&state, sizeof(state)); // считаем crc посылки полностью
+					crc = Serial.crc8((byte*)&state, sizeof(state)); // read crc frame complete
 					
 					if (crc == state.fingerprint) {
 #ifdef DEBUG
 						OutputDebugStringA("CRC Check passed \r\n");						
 #endif //DEBUG
 					} else {
-						// данные повреждены
+						// data corrupted
 #ifdef DEBUG
 						OutputDebugStringA("CRC Check failed \r\n");
 #endif // DEBUG
@@ -144,32 +142,29 @@ void SDRunoPlugin_RemoteBridge::WorkerFunction()
 						state.CenterFrequency,
 						state.FilterBandwidth,
 						state.fingerprint, crc);
-					//m_controller.SetVfoFrequency(0, state.VfoFrequency);
-
-					m_controller.SetCenterFrequency(0, state.CenterFrequency);
+					//m_controller.SetVfoFrequency(0, state.VfoFrequency);					
 					//m_controller.SetDemodulatorType(0, (IUnoPluginController::DemodulatorType)(state.Demodulator));
-						/*&state.WfmDeemphasisMode,
-						&state.NoiseBlankerMode,
-						&state.AgcMode,
-						&state.AgcThreshold,
-						&state.NoiseBlankerLevel,
-						&state.NoiseReductionLevel,
-						&state.CwPeakFilterThreshold,
-						&state.AudioVolume,
-						&state.SP1MinPower,
-						&state.VfoFrequency,
-						&state.CenterFrequency,
-						&state.SP1MaxFrequency,
-						&state.SP1MinFrequency,
-						&state.MPXLevel,
-						&state.FilterBandwidth, */
+						//&state.WfmDeemphasisMode,
+						//&state.NoiseBlankerMode,
+						//&state.AgcMode,
+						//&state.AgcThreshold,
+						//&state.NoiseBlankerLevel,
+						//&state.NoiseReductionLevel,
+						//&state.CwPeakFilterThreshold,
+					m_controller.SetAudioVolume(0, state.AudioVolume);
+						//&state.SP1MinPower,
+						//&state.VfoFrequency,
+					m_controller.SetCenterFrequency(0, state.CenterFrequency);
+						//&state.SP1MaxFrequency,
+						//&state.SP1MinFrequency,
+						//&state.MPXLevel,
+						//&state.FilterBandwidth
 					m_controller.SetSquelchLevel(0, state.SquelchLevel);
 					m_controller.SetSquelchEnable(0, state.SquelchEnable);
-						/*&state.FmNoiseReductionEnable,
-						&state.AudioMute,
-						&state.BiasTEnable,
-						&state.fingerprint*/
-
+						//&state.FmNoiseReductionEnable,
+					m_controller.SetAudioMute(0, state.AudioMute);
+						//&state.BiasTEnable,
+						//&state.fingerprint
 				}
 				else
 				{
