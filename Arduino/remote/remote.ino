@@ -66,10 +66,10 @@ struct __attribute__((__packed__)) State {
   int8_t      CwPeakFilterThreshold   = 0;
   int         AudioVolume             = 0;
   int8_t      SP1MinPower             = 0;
-  long int    VfoFrequency            = 0;          //VFO Freq,                Hz
-  long int    CenterFrequency         = 443300000;  //Center Frequency,        Hz
-  long int    SP1MinFrequency         = 0;
-  long int    SP1MaxFrequency         = 0;
+  double      VfoFrequency            = 0;          //VFO Freq,                Hz
+  uint32_t  CenterFrequency         = 443300000;  //Center Frequency,        Hz
+  double      SP1MinFrequency         = 0;
+  double      SP1MaxFrequency         = 0;
   long int    MPXLevel                = 0;
   int         FilterBandwidth         = 4300;       //Filter bandwith,         Hz
   int         SquelchLevel            = 0;
@@ -77,7 +77,7 @@ struct __attribute__((__packed__)) State {
   bool        FmNoiseReductionEnable  = false;
   bool        AudioMute               = false;
   bool        BiasTEnable             = false;
-  //non essential params
+  //non transferable params
   uint16_t    Step                    = 16;         //trailing four bits are reserved for aux and does not mapped to step place highlighter
   bool        VfoMode                 = false;      //
   bool        Att                     = false;      //Attenuator mode
@@ -189,60 +189,60 @@ void loop() {
 }
 
 void echoStruct() {
-    Serial.print(state.Demodulator);
-    Serial.print("\t");
-    Serial.print(state.WfmDeemphasisMode);
-    Serial.print("\t");
-    Serial.print(state.NoiseBlankerMode);
-    Serial.print("\t");
-    Serial.print(state.AgcMode);
-    Serial.print("\t");
-    Serial.print(state.AgcThreshold);
-    Serial.print("\t");
-    Serial.print(state.NoiseBlankerLevel);
-    Serial.print("\t");
-    Serial.print(state.NoiseReductionLevel);
-    Serial.print("\t");
-    Serial.print(state.CwPeakFilterThreshold);
-    Serial.print("\t");
-    Serial.print(state.AudioVolume);
-    Serial.print("\t");
-    Serial.print(state.SP1MinPower);
-    Serial.print("\t");
-    Serial.print(state.VfoFrequency);
-    Serial.print("\t");
-    Serial.print(state.CenterFrequency);
-    Serial.print("\t");
-    Serial.print(state.SP1MinFrequency);
-    Serial.print("\t");
-    Serial.print(state.SP1MaxFrequency);
-    Serial.print("\t");
-    Serial.print(state.MPXLevel);
-    Serial.print("\t");
-    Serial.print(state.FilterBandwidth);
-    Serial.print("\t");
-    Serial.print(state.SquelchLevel);
-    Serial.print("\t");
-    Serial.print(state.SquelchEnable);
-    Serial.print("\t");
-    Serial.print(state.FmNoiseReductionEnable);
-    Serial.print("\t");
-    Serial.print(state.AudioMute);
-    Serial.print("\t");
-    Serial.print(state.BiasTEnable);
-    Serial.print("\t");
-    Serial.print(state.fingerprint);
-    Serial.println("");
+  Serial.print(state.Demodulator);
+  Serial.print("\t");
+  Serial.print(state.WfmDeemphasisMode);
+  Serial.print("\t");
+  Serial.print(state.NoiseBlankerMode);
+  Serial.print("\t");
+  Serial.print(state.AgcMode);
+  Serial.print("\t");
+  Serial.print(state.AgcThreshold);
+  Serial.print("\t");
+  Serial.print(state.NoiseBlankerLevel);
+  Serial.print("\t");
+  Serial.print(state.NoiseReductionLevel);
+  Serial.print("\t");
+  Serial.print(state.CwPeakFilterThreshold);
+  Serial.print("\t");
+  Serial.print(state.AudioVolume);
+  Serial.print("\t");
+  Serial.print(state.SP1MinPower);
+  Serial.print("\t");
+  Serial.print(state.VfoFrequency);
+  Serial.print("\t");
+  Serial.print(state.CenterFrequency);
+  Serial.print("\t");
+  Serial.print(state.SP1MinFrequency);
+  Serial.print("\t");
+  Serial.print(state.SP1MaxFrequency);
+  Serial.print("\t");
+  Serial.print(state.MPXLevel);
+  Serial.print("\t");
+  Serial.print(state.FilterBandwidth);
+  Serial.print("\t");
+  Serial.print(state.SquelchLevel);
+  Serial.print("\t");
+  Serial.print(state.SquelchEnable);
+  Serial.print("\t");
+  Serial.print(state.FmNoiseReductionEnable);
+  Serial.print("\t");
+  Serial.print(state.AudioMute);
+  Serial.print("\t");
+  Serial.print(state.BiasTEnable);
+  Serial.print("\t");
+  Serial.print(state.fingerprint);
+  Serial.println("");
 }
 
 void parseStruct(String string) {
   const char *str = string.c_str();
-//  sscanf(str, "%hu %lu %lu %hu %lu",
-//         &state.Demodulator,
-//         &state.VfoFrequency,
-//         &state.CenterFrequency,
-//         &state.FilterBandwidth,
-//         &state.fingerprint);
+  //  sscanf(str, "%hu %lu %lu %hu %lu",
+  //         &state.Demodulator,
+  //         &state.VfoFrequency,
+  //         &state.CenterFrequency,
+  //         &state.FilterBandwidth,
+  //         &state.fingerprint);
 }
 
 //interrupt service routine by Timer1 interrupt signal
@@ -250,16 +250,16 @@ void fillRegisters_isr() {
   if (state_changed) {
     int array[12];
     int temporaryStep = state.Step;
-    long int number = state.CenterFrequency;
+    uint32_t number = state.CenterFrequency;
 
     digitalWrite(digit_clock_pin, LOW);
 
-//    //highlight mute button
-//    if (state.AudioMute) {
-//      bitSet(temporaryStep, 3);
-//    } else {
-//      bitClear(temporaryStep, 3);
-//    }
+    //    //highlight mute button
+    //    if (state.AudioMute) {
+    //      bitSet(temporaryStep, 3);
+    //    } else {
+    //      bitClear(temporaryStep, 3);
+    //    }
 
     //highlight bias-T button
     if (state.BiasTEnable) {
@@ -301,11 +301,11 @@ void processPCF() {
   pcf_1_status = PCF_1.read16();
 
   //process Audio Mute button toggle //Red!
-//  if (!bitRead(pcf_1_status, 0))
-//  {
-//    state.AudioMute = !state.AudioMute;
-//    update_display = true;
-//  }
+  //  if (!bitRead(pcf_1_status, 0))
+  //  {
+  //    state.AudioMute = !state.AudioMute;
+  //    update_display = true;
+  //  }
 
   //process Bias-T button toggle
   if (!bitRead(pcf_1_status, 1))
@@ -525,7 +525,7 @@ void stepDown() {
 }
 
 void SQLUp() {
-  if (state.SquelchLevel < 220) //max value that affects SQL bar 
+  if (state.SquelchLevel < 220) //max value that affects SQL bar
   {
     state.SquelchLevel++;
   }
@@ -538,7 +538,7 @@ void SQLDown() {
 }
 
 void volUp() {
-  if (state.AudioVolume < 220) //max value that affects Volume bar 
+  if (state.AudioVolume < 220) //max value that affects Volume bar
   {
     state.AudioVolume++;
   }
@@ -551,17 +551,23 @@ void volDown() {
 }
 
 void mainEncInc() {
-  uint16_t factor = castStep();
-  state.CenterFrequency += factor;
+  uint32_t factor = castStep();
+  if(state.CenterFrequency+factor <= 3000000000){
+    state.CenterFrequency += factor;
+  }else{
+    state.CenterFrequency = 3000000000;
+  }
 }
 
 void mainEncDec() {
-  uint16_t factor = castStep();
-  state.CenterFrequency -= factor;
+  uint32_t factor = castStep();
+  if(state.CenterFrequency - factor > 0 && state.CenterFrequency - factor < 3000000000){
+    state.CenterFrequency -= factor;
+  }
 }
 
-uint16_t castStep() {
-  uint16_t factor = 0;
+long int castStep() {
+  unsigned long long int factor = 0;
   switch (state.Step) {
     case 16:
       factor = 1;
@@ -578,27 +584,27 @@ uint16_t castStep() {
     case 256:
       factor = 10000;
       break;
-      //    case 512:
-      //      factor = 100000;
-      //      break;
-      //    case 1024:
-      //      factor = 1000000;
-      //      break;
-      //    case 2048:
-      //      factor = 10000000;
-      //      break;
-      //    case 4096:
-      //      factor = 100000000;
-      //      break;
-      //    case 8192:
-      //      factor = 1000000000;
-      //      break;
-      //    case 16384:
-      //      factor = 10000000000;
-      //      break;
-      //    case 32768:
-      //      factor = 100000000000;
-      //      break;
+    case 512:
+      factor = 100000;
+      break;
+    case 1024:
+      factor = 1000000;
+      break;
+    case 2048:
+      factor = 10000000;
+      break;
+    case 4096:
+      factor = 100000000;
+      break;
+    case 8192:
+      factor = 1000000000;
+      break;
+    case 16384:
+      factor = 10000000000;
+      break;
+    case 32768:
+      factor = 100000000000;
+      break;
   }
 
   return factor;
