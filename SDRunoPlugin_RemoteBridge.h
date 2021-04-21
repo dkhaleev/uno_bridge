@@ -77,10 +77,10 @@ public:
 		int8_t      CwPeakFilterThreshold	= 0;
 		int         AudioVolume				= 0; //220 is max of the bar value
 		int8_t      SP1MinPower				= 0;
-		long int    VfoFrequency			= 0; //VFO Freq,                Hz
-		long int    CenterFrequency			= 0;
-		long int    SP1MaxFrequency			= 0;
-		long int	SP1MinFrequency			= 0;
+		uint32_t    VfoFrequency			= 0; //VFO Freq,                Hz
+		uint32_t    CenterFrequency			= 0;
+		uint32_t    SP1MaxFrequency			= 0;
+		uint32_t	SP1MinFrequency			= 0;
 		long int    MPXLevel				= 0;
 		int         FilterBandwidth			= 0; //Filter bandwith,         Hz
 		int         SquelchLevel			= 0; //220 is max of the bar value

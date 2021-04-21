@@ -95,10 +95,10 @@ void SDRunoPlugin_RemoteBridge::WorkerFunction()
 				if (Serial.peekReceiver())
 				{
 					error = "receiver peeked successfully";
-					char buffer[300];
-					Serial.readStringNoTimeOut(buffer, '\n', 300);					
+					char buffer[500];
+					Serial.readStringNoTimeOut(buffer, '\n', 500);					
 					sscanf(buffer, 
-						"%d %d %d %d %d %d %d %d %d %d %lu %lu %lu %lu %lu %lu %d %d %b %b %b %b %lu", 
+						"%d %d %d %d %d %d %d %d %d %d %lu %lu %lu %lu %lu %lu %d %d %d %d %d %d %lu", 
 						&state.Demodulator, 
 						&state.WfmDeemphasisMode,
 						&state.NoiseBlankerMode,
@@ -123,25 +123,43 @@ void SDRunoPlugin_RemoteBridge::WorkerFunction()
 						&state.fingerprint
 					);
 					
-					crc = Serial.crc8((byte*)&state, sizeof(state)); // read crc frame complete
-					
-					if (crc == state.fingerprint) {
-#ifdef DEBUG
-						OutputDebugStringA("CRC Check passed \r\n");						
-#endif //DEBUG
-					} else {
-						// data corrupted
-#ifdef DEBUG
-						OutputDebugStringA("CRC Check failed \r\n");
-#endif // DEBUG
-					}
-
-					DbgMsg("Demodulator: %hu \t VFO: %lu \t CenterFrequency: %lu \t FilterBandwidth: %hu \t CRC: %lu \t CCRC: %lu\r\n ",
+//					crc = Serial.crc8((byte*)&state, sizeof(state)); // read crc frame complete
+//					
+//					if (crc == state.fingerprint) {
+//#ifdef DEBUG
+//						OutputDebugStringA("CRC Check passed \r\n");						
+//#endif //DEBUG
+//					} else {
+//						// data corrupted
+//#ifdef DEBUG
+//						OutputDebugStringA("CRC Check failed \r\n");
+//#endif // DEBUG
+//					}
+					DbgMsg("%d %d %d %d %d %d %d %d %d %d %lu %lu %lu %lu %lu %lu %d %d %d %d %d %d %lu\r\n", 
 						state.Demodulator,
+						state.WfmDeemphasisMode,
+						state.NoiseBlankerMode,
+						state.AgcMode,
+						state.AgcThreshold,
+						state.NoiseBlankerLevel,
+						state.NoiseReductionLevel,
+						state.CwPeakFilterThreshold,
+						state.AudioVolume,
+						state.SP1MinPower,
 						state.VfoFrequency,
 						state.CenterFrequency,
+						state.SP1MaxFrequency,
+						state.SP1MinFrequency,
+						state.MPXLevel,
 						state.FilterBandwidth,
-						state.fingerprint, crc);
+						state.SquelchLevel,
+						state.SquelchEnable,
+						state.FmNoiseReductionEnable,
+						state.AudioMute,
+						state.BiasTEnable,
+						state.fingerprint);
+
+					//OutputDebugStringA("Mute:");
 					//m_controller.SetVfoFrequency(0, state.VfoFrequency);					
 					//m_controller.SetDemodulatorType(0, (IUnoPluginController::DemodulatorType)(state.Demodulator));
 						//&state.WfmDeemphasisMode,

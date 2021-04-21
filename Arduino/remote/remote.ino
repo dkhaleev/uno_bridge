@@ -66,10 +66,10 @@ struct __attribute__((__packed__)) State {
   int8_t      CwPeakFilterThreshold   = 0;
   int         AudioVolume             = 0;
   int8_t      SP1MinPower             = 0;
-  double      VfoFrequency            = 0;          //VFO Freq,                Hz
-  uint32_t  CenterFrequency         = 443300000;  //Center Frequency,        Hz
-  double      SP1MinFrequency         = 0;
-  double      SP1MaxFrequency         = 0;
+  uint32_t    VfoFrequency            = 0;          //VFO Freq,                Hz
+  uint32_t    CenterFrequency         = 443300000;  //Center Frequency,        Hz
+  uint32_t    SP1MinFrequency         = 0;
+  uint32_t    SP1MaxFrequency         = 0;
   long int    MPXLevel                = 0;
   int         FilterBandwidth         = 4300;       //Filter bandwith,         Hz
   int         SquelchLevel            = 0;
