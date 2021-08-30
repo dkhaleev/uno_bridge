@@ -32,7 +32,7 @@ uint8_t encoderBPinALast = LOW;
 uint8_t encoderMPinALast = LOW;
 
 struct __attribute__((__packed__)) State {
-  int8_t      Demodulator             = 0; //Demodulator type,        Enum:
+  int8_t      Demodulator             = 0;  //Demodulator type,        Enum:
   //    DemodulatorNone = 0,
   //    DemodulatorAM = 1,
   //    DemodulatorSAM = 2,
@@ -82,13 +82,75 @@ struct __attribute__((__packed__)) State {
   bool        VfoMode                 = false;      //
   bool        Att                     = false;      //Attenuator mode
   bool        Preamp                  = false;      //Pre-amp mode
+  uint8_t     Band                    = 0;          //Index of current band
 
   long int    fingerprint;                          //hash-like substitute. @ToDo: rework me later
 } state;
 
-bool state_changed = true;
-bool update_display = true;
+//bands
+typedef struct {
+  String    band_name;
+  uint32_t  band_lower;
+  uint32_t  band_mid;
+  uint32_t  band_upper;
+} band_type;
+
+//@todo: check middle freq!
+band_type bands[17] = {
+  {"160m",     1800000,    1900000,    2000000},
+  {"80m",      3500000,    3750000,    4000000},
+  {"40m",      7000000,    7150000,    7300000},
+  {"30m",     10100000,   10125000,   10150000},
+  {"20m",     14000000,   14175000,   14350000},
+  {"17m",     18068000,   18118000,   18168000},
+  {"12m",     24890000,   24940000,   24990000},
+  {"10m",     28000000,   28850000,   29700000},
+  {"6m",      50000000,   52000000,   54000000},
+  {"4m",      70000000,   70250000,   70500000},
+  {"2m",     144000000,  146000000,  148000000},
+  {"1,25m",  219000000,  222000000,  225000000},
+  {"70cm",   420000000,  435000000,  450000000},
+  {"33cm",   902000000,  915000000,  928000000},
+  {"23cm",  1240000000, 1240000000, 1240000000},
+  {"13cmL", 2300000000, 2305000000, 2310000000},
+  {"13cmU", 2390000000, 2420000000, 2450000000},
+};
+
+//demodulator
+typedef struct {
+  char demod_name;
+  int8_t demod_type;
+} demodulator_type;
+
+//demodulators
+demodulator_type demodulator[14] = {
+  {"None",    0},
+  {"AM",      1},
+  {"SAM",     2},
+  {"NFM",     3},
+  {"MFM",     4},
+  {"WFM",     5},
+  {"SWFM",    6},
+  {"DSB",     7},
+  {"LSB",     8},
+  {"USB",     9},
+  {"CW",      10},
+  {"Digital", 11},
+  {"DAB",     12},
+  {"IQOUT",   13}
+};
+
+
 //@todo: add dynamic state change flag system or just spread a bunch of bool flags
+bool state_changed = true;
+bool update_display_all = true;
+bool update_display_sql = false;
+bool update_display_mode = false;
+bool update_display_vol = false;
+bool update_display_band = false;
+bool update_display_att = false;
+bool update_display_preamp = false;
+
 
 //LED params
 // pin 11 of 74HC595 (SHCP)
@@ -170,9 +232,39 @@ void loop() {
     state_changed = false;
   }
 
-  if (update_display) {
-    updateDisplay();
-    update_display = false;
+  if (update_display_all) {
+    updateDisplayAll();
+    update_display_all = false;
+  }
+  
+  if(update_display_sql) {
+    printSQL();
+    update_display_sql = false;
+  }
+
+  if(update_display_mode) {
+    printMode();
+    update_display_mode = false;
+  }
+
+  if(update_display_vol) {
+    printVol();
+    update_display_vol = false;
+  }
+
+  if(update_display_band){
+    printBand();
+    update_display_band = false;
+  }
+
+  if(update_display_att){
+    printAtt();
+    update_display_att = false;  
+  }
+
+  if(update_display_preamp){
+    printPreamp();
+    update_display_preamp = false;
   }
 
   if (PCF_1_FLAG) {
@@ -291,6 +383,7 @@ void fillRegisters_isr() {
     }
 
     digitalWrite(digit_clock_pin, HIGH);
+    update_display_band = true;
   }
 }
 
@@ -308,7 +401,7 @@ void processPCF() {
   //  if (!bitRead(pcf_1_status, 0))
   //  {
   //    state.AudioMute = !state.AudioMute;
-  //    update_display = true;
+  //    update_display_all = true;
   //  }
 
   //process Bias-T button toggle
@@ -321,7 +414,7 @@ void processPCF() {
   if (!bitRead(pcf_1_status, 14))
   {
     state.VfoMode = !state.VfoMode;
-    update_display = true;
+    update_display_mode = true;
   }
 
   //process StepUp button
@@ -340,28 +433,28 @@ void processPCF() {
   if (!bitRead(pcf_1_status, 8))
   {
     state.SquelchEnable = !state.SquelchEnable;
-    update_display = true;
+    update_display_sql = true;
   }
 
   //process Mute On/Off button
   if (!bitRead(pcf_1_status, 11))
   {
     state.AudioMute = !state.AudioMute;
-    update_display = true;
+    update_display_vol = true;
   }
 
   //process Attenuator Toggle button
   if (!bitRead(pcf_1_status, 6))
   {
     state.Att = !state.Att;
-    update_display = true;
+    update_display_att = true;
   }
 
   //process Pre-Amp Toggle button
   if (!bitRead(pcf_1_status, 5))
   {
     state.Preamp = !state.Preamp;
-    update_display = true;
+    update_display_preamp = true;
   }
 
   state_changed = true;
@@ -377,7 +470,7 @@ void encoder_a_isr() {
       SQLDown();
     }
     state_changed = true; // Changed the value
-    update_display = true;
+    update_display_sql = true;
   }
   encoderAPinALast = n;
 }
@@ -392,7 +485,7 @@ void encoder_b_isr() {
       volUp();
     }
     state_changed = true; // Changed the value
-    update_display = true;
+    update_display_vol = true;
   }
   encoderBPinALast = n;
 }
@@ -411,11 +504,11 @@ void encoder_m_isr() {
   encoderMPinALast = n;
 }
 
-void updateDisplay() {
+void updateDisplayAll() {
   printSQL();
   printMode();
   printVol();
-
+  printBand();
   printAtt();
   printPreamp();
 }
@@ -424,12 +517,30 @@ void printMode() {
   tft.setTextSize(2);
   tft.setTextFont(3);
   char buffer[50];
-  uint16_t color;
-  sprintf(buffer, "Mode: %s", state.VfoMode ? "VFO" : "Memory");
+  sprintf(buffer, "%s", state.VfoMode ? "VFO" : "Memory");
   tft.setTextColor(TFT_WHITE);
-  tft.drawRoundRect(289, 0, 188, 34, 5, TFT_WHITE ); //X, Y, W, H, radius, Color
-  tft.fillRoundRect(290, 1, 184, 32, 5, TFT_BLACK); //black mask
-  tft.drawString(buffer, 296, 0, 2); //string, Y, Y, FontNumber
+  tft.drawRoundRect(399, 0, 80, 34, 5, TFT_WHITE ); //X, Y, W, H, radius, Color
+  tft.fillRoundRect(400, 1, 78, 32, 5, TFT_BLACK); //black mask
+  tft.drawString(buffer, 410, 0, 2); //string, X, Y, FontNumber
+}
+
+void printBand(){
+  tft.setTextSize(2);
+  tft.setTextFont(3);
+  char buffer[50];
+  tft.setTextColor(TFT_WHITE);  
+  tft.drawRoundRect(139, 0, 80, 34, 5, TFT_WHITE); //X, Y, W, H, radius, Color
+  tft.fillRoundRect(140, 1, 78, 32, 5, TFT_BLACK); //black mask
+  for(int i=0; i<17; i++) //size of bands array
+  {
+    if(bands[i].band_lower <= state.CenterFrequency && state.CenterFrequency <= bands[i].band_upper)
+    {
+      Serial.print("Band \t");
+      Serial.println(bands[i].band_name);
+      sprintf(buffer, "%s", bands[i].band_name.c_str());
+    }
+  }
+  tft.drawString(buffer, 150, 0, 2); //string, X, Y, FontNumber
 }
 
 void printSQL() {
@@ -558,7 +669,7 @@ void mainEncInc() {
   uint32_t factor = castStep();
   if(state.VfoFrequency+factor <= 3000000000){
     state.VfoFrequency += factor;
-  }else{
+  } else {
     state.VfoFrequency = 3000000000;
   }
 }
