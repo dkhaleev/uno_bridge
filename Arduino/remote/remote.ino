@@ -338,12 +338,12 @@ void parseStruct(String string) {
             &state.SP1MinFrequency,
             &state.SP1MaxFrequency
     );
-  update_display = true;
+  update_display_all = true;
 }
 
 //interrupt service routine by Timer1 interrupt signal
 void fillRegisters_isr() {
-  if (state_changed || update_display) {
+  if (state_changed || update_display_all) {
     int array[12];
     int temporaryStep = state.Step;
     uint32_t number = state.VfoFrequency;
@@ -535,8 +535,8 @@ void printBand(){
   {
     if(bands[i].band_lower <= state.CenterFrequency && state.CenterFrequency <= bands[i].band_upper)
     {
-      Serial.print("Band \t");
-      Serial.println(bands[i].band_name);
+//      Serial.print("Band \t");
+//      Serial.println(bands[i].band_name);
       sprintf(buffer, "%s", bands[i].band_name.c_str());
     }
   }
