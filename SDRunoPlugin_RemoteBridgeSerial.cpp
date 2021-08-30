@@ -77,7 +77,7 @@ char Serial::openDevice(const char *Device, const unsigned int Bauds)
 	// Open serial port
 	//hSerial = CreateFileA(Device, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
 
-	LPCTSTR pcCommPortWin32DevicePath = TEXT("\\\\.\\COM48");
+	LPCTSTR pcCommPortWin32DevicePath = TEXT("\\\\.\\COM65");
 	//LPCTSTR pcCommPortWin32DevicePath = L"\\\\.\\COM48";
 	hSerial = ::CreateFile(pcCommPortWin32DevicePath, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
 	//hSerial = CreateFile(pcCommPortWin32DevicePath,

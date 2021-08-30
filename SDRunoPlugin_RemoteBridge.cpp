@@ -98,8 +98,8 @@ void SDRunoPlugin_RemoteBridge::WorkerFunction()
 					char buffer[500];
 					Serial.readStringNoTimeOut(buffer, '\n', 500);					
 					sscanf(buffer, 
-						"%d %d %d %d %d %d %d %d %d %d %lu %lu %lu %lu %lu %lu %d %d %d %d %d %d %lu", 
-						&state.Demodulator, 
+						"%hhd %hhd %hhd %hhd %hhd %hhd %hhd %hhd %d %hhd %lu %lu %lu %lu %lu %lu %d %d %d %d %d %lu",
+						&state.Demodulator,
 						&state.WfmDeemphasisMode,
 						&state.NoiseBlankerMode,
 						&state.AgcMode,
@@ -120,7 +120,7 @@ void SDRunoPlugin_RemoteBridge::WorkerFunction()
 						&state.FmNoiseReductionEnable,
 						&state.AudioMute,
 						&state.BiasTEnable,
-						&state.fingerprint
+						&state.fingerprint						
 					);
 					
 //					crc = Serial.crc8((byte*)&state, sizeof(state)); // read crc frame complete
@@ -135,7 +135,7 @@ void SDRunoPlugin_RemoteBridge::WorkerFunction()
 //						OutputDebugStringA("CRC Check failed \r\n");
 //#endif // DEBUG
 //					}
-					DbgMsg("%d %d %d %d %d %d %d %d %d %d %lu %lu %lu %lu %lu %lu %d %d %d %d %d %d %lu\r\n", 
+					DbgMsg("Debug: %hhd %hhd %hhd %hhd %hhd %hhd %hhd %hhd %d %hhd %lu %lu %lu %lu %lu %lu %d %d %d %d %d %lu",
 						state.Demodulator,
 						state.WfmDeemphasisMode,
 						state.NoiseBlankerMode,
@@ -191,29 +191,34 @@ void SDRunoPlugin_RemoteBridge::WorkerFunction()
 				if (stateChanged) {
 					char output_buffer[300];
 					sprintf(output_buffer,
-						"%d %d %d %d %d %d %d %d %d %d %lu %lu %lu %lu %lu %lu %d %d %b %b %b %b %lu",
-						&state.Demodulator,
-						&state.WfmDeemphasisMode,
-						&state.NoiseBlankerMode,
-						&state.AgcMode,
-						&state.AgcThreshold,
-						&state.NoiseBlankerLevel,
-						&state.NoiseReductionLevel,
-						&state.CwPeakFilterThreshold,
-						&state.AudioVolume,
-						&state.SP1MinPower,
-						&state.VfoFrequency,
-						&state.CenterFrequency,
-						&state.SP1MaxFrequency,
-						&state.SP1MinFrequency,
-						&state.MPXLevel,
-						&state.FilterBandwidth,
-						&state.SquelchLevel,
-						&state.SquelchEnable,
-						&state.FmNoiseReductionEnable,
-						&state.AudioMute,
-						&state.BiasTEnable,
-						&state.fingerprint
+						"%lu %lu %lu %lu \r\n",
+						state.VfoFrequency,
+						state.CenterFrequency,
+						state.SP1MinFrequency,
+						state.SP1MaxFrequency
+						//"%d %d %d %d %d %d %d %d %d %d %lu %lu %lu %lu %lu %lu %d %d %b %b %b %b %lu",
+						//&state.Demodulator,
+						//&state.WfmDeemphasisMode,
+						//&state.NoiseBlankerMode,
+						//&state.AgcMode,
+						//&state.AgcThreshold,
+						//&state.NoiseBlankerLevel,
+						//&state.NoiseReductionLevel,
+						//&state.CwPeakFilterThreshold,
+						//&state.AudioVolume,
+						//&state.SP1MinPower,
+						//&state.VfoFrequency,
+						//&state.CenterFrequency,
+						//&state.SP1MaxFrequency,
+						//&state.SP1MinFrequency,
+						//&state.MPXLevel,
+						//&state.FilterBandwidth,
+						//&state.SquelchLevel,
+						//&state.SquelchEnable,
+						//&state.FmNoiseReductionEnable,
+						//&state.AudioMute,
+						//&state.BiasTEnable,
+						//&state.fingerprint
 					);
 					Serial.writeString(output_buffer);
 					stateChanged = false;
@@ -223,7 +228,7 @@ void SDRunoPlugin_RemoteBridge::WorkerFunction()
 
 			int vrx_num = m_controller.GetVRXCount();
 			//DbgMsg("VRX Count %d", vrx_num);
-			//Sleep(2000);
+			Sleep(100);
 #endif // DEBUG
 
 			//@todo: re-work me. 
@@ -263,7 +268,7 @@ void SDRunoPlugin_RemoteBridge::StartBridge(std::string addr)
 	m_started = true;
 
 	std::string portStub = "\\\\.\\" + addr;
-	if ((int)Serial.openDevice(portStub.c_str(), 9600) != (int)1)
+	if ((int)Serial.openDevice(portStub.c_str(), 115200) != (int)1)
 	{
 		isConnected = false;
 		error = "Error while opening port";
@@ -309,27 +314,19 @@ void SDRunoPlugin_RemoteBridge::StopBridge()
 
 void SDRunoPlugin_RemoteBridge::UpdateSampleRate()
 {
-	sampleRate = (int)m_controller.GetSampleRate(0);
+	sampleRate = (double)m_controller.GetSampleRate(0);
 }
 
-void SDRunoPlugin_RemoteBridge::UpdateCenterFrequency()
+void SDRunoPlugin_RemoteBridge::UpdateFrequencies() 
 {
 	state.CenterFrequency = (long int)m_controller.GetCenterFrequency(0);
-	stateChanged = true;
-
-}
-
-void SDRunoPlugin_RemoteBridge::UpdateSP1MinFreq()
-{
+	state.VfoFrequency = (long int)m_controller.GetVfoFrequency(0);
 	state.SP1MinFrequency = (long int)m_controller.GetSP1MinFrequency(0);
+	state.SP1MaxFrequency = (long int)m_controller.GetSP1MaxPower(0);
 	stateChanged = true;
 }
 
-void SDRunoPlugin_RemoteBridge::UpdateSP1MaxFreq() 
-{
-	state.SP1MaxFrequency = (long int)m_controller.GetSP1MaxFrequency(0);
-	stateChanged = true;
-}
+
 //@todo: process me
 /*
 Lots of handlers for events

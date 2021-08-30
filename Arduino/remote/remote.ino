@@ -66,17 +66,17 @@ struct __attribute__((__packed__)) State {
   int8_t      CwPeakFilterThreshold   = 0;
   int         AudioVolume             = 0;
   int8_t      SP1MinPower             = 0;
-  uint32_t    VfoFrequency            = 0;          //VFO Freq,                Hz
+  uint32_t    VfoFrequency            = 145300000;  //VFO Freq,                Hz
   uint32_t    CenterFrequency         = 443300000;  //Center Frequency,        Hz
   uint32_t    SP1MinFrequency         = 0;
   uint32_t    SP1MaxFrequency         = 0;
   long int    MPXLevel                = 0;
   int         FilterBandwidth         = 4300;       //Filter bandwith,         Hz
   int         SquelchLevel            = 0;
-  bool        SquelchEnable           = false;
-  bool        FmNoiseReductionEnable  = false;
-  bool        AudioMute               = false;
-  bool        BiasTEnable             = false;
+  int         SquelchEnable           = 0;          //Boolean val
+  int         FmNoiseReductionEnable  = 0;          //Boolean val
+  int         AudioMute               = 0;          //Boolean val
+  int         BiasTEnable             = 0;          //Boolean val
   //non transferable params
   uint16_t    Step                    = 16;         //trailing four bits are reserved for aux and does not mapped to step place highlighter
   bool        VfoMode                 = false;      //
@@ -127,7 +127,7 @@ unsigned long timepassed = millis();
 unsigned long passed_10 = 0;
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.setTimeout(10); //10 mS
   State state;
 
@@ -186,6 +186,7 @@ void loop() {
   if (str.length() > 0) {
     parseStruct(str);
   }
+//  delay(100);
 }
 
 void echoStruct() {
@@ -237,20 +238,23 @@ void echoStruct() {
 
 void parseStruct(String string) {
   const char *str = string.c_str();
-  //  sscanf(str, "%hu %lu %lu %hu %lu",
-  //         &state.Demodulator,
-  //         &state.VfoFrequency,
-  //         &state.CenterFrequency,
-  //         &state.FilterBandwidth,
-  //         &state.fingerprint);
+    sscanf(
+      str, 
+      "%lu %lu %lu %lu",
+            &state.VfoFrequency,
+            &state.CenterFrequency,
+            &state.SP1MinFrequency,
+            &state.SP1MaxFrequency
+    );
+  update_display = true;
 }
 
 //interrupt service routine by Timer1 interrupt signal
 void fillRegisters_isr() {
-  if (state_changed) {
+  if (state_changed || update_display) {
     int array[12];
     int temporaryStep = state.Step;
-    uint32_t number = state.CenterFrequency;
+    uint32_t number = state.VfoFrequency;
 
     digitalWrite(digit_clock_pin, LOW);
 
@@ -552,17 +556,17 @@ void volDown() {
 
 void mainEncInc() {
   uint32_t factor = castStep();
-  if(state.CenterFrequency+factor <= 3000000000){
-    state.CenterFrequency += factor;
+  if(state.VfoFrequency+factor <= 3000000000){
+    state.VfoFrequency += factor;
   }else{
-    state.CenterFrequency = 3000000000;
+    state.VfoFrequency = 3000000000;
   }
 }
 
 void mainEncDec() {
   uint32_t factor = castStep();
-  if(state.CenterFrequency - factor > 0 && state.CenterFrequency - factor < 3000000000){
-    state.CenterFrequency -= factor;
+  if(state.VfoFrequency - factor > 0 && state.VfoFrequency - factor < 3000000000){
+    state.VfoFrequency -= factor;
   }
 }
 

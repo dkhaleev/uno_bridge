@@ -85,74 +85,207 @@ void SDRunoPlugin_RemoteBridgeUi::HandleEvent(const UnoEvent& ev)
 {
 	switch (ev.GetType())
 	{
-		//@todo: process and handle me
-		/*
-		UndefinedEvent = 0,
-
-		DemodulatorChanged = 1,
-		BandwidthChanged = 2,
-		FrequencyChanged = 3,
-		
-		SampleRateChanged = 5,
-		StreamingStarted = 6,
-		StreamingStopped = 7,
-		SquelchEnableChanged = 8,
-		SquelchThresholdChanged = 9,
-		AgcThresholdChanged = 10,
-		AgcModeChanged = 11,
-		NoiseBlankerLevelChanged = 12,
-		NoiseReductionLevelChanged = 13,
-		CwPeakFilterThresholdChanged = 14,
-		FmNoiseReductionEnabledChanged = 15,
-		FmNoiseReductionThresholdChanged = 16,
-		WfmDeemphasisModeChanged = 17,
-		AudioVolumeChanged = 18,
-		AudioMuteChanged = 19,
-		IFGainChanged = 20,
-		SavingWorkspace = 21,
-		VRXCountChanged = 22,
-		VRXStateChanged = 23,
-		StepSizeChanged = 24,
-		VFOChanged = 25,
-		ClosingDown = 26,
-		
-		SP1MaxFreqChanged = 28,
-		BiasTEnableChanged = 29,
-		SP1MinPowerChanged = 30,
-		SP1MaxPowerChanged = 31
-		*/
-	case UnoEvent::SP1MinFreqChanged: //SP1MinFreqChanged = 27
-		m_parent.UpdateSP1MinFreq();
+	case UnoEvent::UndefinedEvent: //UndefinedEvent = 0
+#ifdef DEBUG
+		OutputDebugStringA("UndefinedEvent = 0 \r\n");
+#endif DEBUG
 		break;
+
+	case UnoEvent::DemodulatorChanged: //DemodulatorChanged = 1
+#ifdef DEBUG
+		OutputDebugStringA("DemodulatorChanged = 1 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::BandwidthChanged: //BandwidthChanged = 2
+#ifdef DEBUG
+		OutputDebugStringA("BandwidthChanged = 2 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::FrequencyChanged: //FrequencyChanged = 3
+#ifdef DEBUG
+		OutputDebugStringA("FrequencyChanged = 3 \r\n");
+#endif DEBUG
+		m_parent.UpdateFrequencies();
+		break;
+
 	case UnoEvent::CenterFrequencyChanged: //CenterFrequencyChanged = 4
-		m_parent.UpdateCenterFrequency();
-		break;
-	case UnoEvent::VRXCountChanged:
 #ifdef DEBUG
-		OutputDebugStringA("VRX Count Changed \r\n");
-#endif // DEBUG
+		OutputDebugStringA("CenterFrequencyChanged = 4 \r\n");
+#endif DEBUG
+		m_parent.UpdateFrequencies();
 		break;
 
-	case UnoEvent::VRXStateChanged:
+	case UnoEvent::SampleRateChanged: //SampleRateChanged = 5
 #ifdef DEBUG
-		OutputDebugStringA("VRX State Changed \r\n");
-#endif // DEBUG
+		OutputDebugStringA("SampleRateChanged = 5 \r\n");
+#endif DEBUG
 		break;
 
-	case UnoEvent::StreamingStarted:
+	case UnoEvent::StreamingStarted: //StreamingStarted = 6
+#ifdef DEBUG
+		OutputDebugStringA("StreamingStarted = 6 \r\n");
+#endif DEBUG
 		break;
 
-	case UnoEvent::StreamingStopped:
+	case UnoEvent::StreamingStopped: //StreamingStopped = 7
+#ifdef DEBUG
+		OutputDebugStringA("StreamingStopped = 7 \r\n");
+#endif DEBUG
 		break;
 
-	case UnoEvent::SavingWorkspace:
+	case UnoEvent::SquelchEnableChanged: //SquelchEnableChanged = 8
+#ifdef DEBUG
+		OutputDebugStringA("SquelchEnableChanged = 8 \r\n");
+#endif DEBUG
 		break;
 
-	case UnoEvent::ClosingDown:
+	case UnoEvent::SquelchThresholdChanged: //SquelchThresholdChanged = 9
+#ifdef DEBUG
+		OutputDebugStringA("SquelchThresholdChanged = 9 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::AgcThresholdChanged: //AgcThresholdChanged = 10
+#ifdef DEBUG
+		OutputDebugStringA("AgcThresholdChanged = 10 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::AgcModeChanged: //AgcModeChanged = 11
+#ifdef DEBUG
+		OutputDebugStringA("AgcModeChanged = 11 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::NoiseBlankerLevelChanged: //NoiseBlankerLevelChanged = 12
+#ifdef DEBUG
+		OutputDebugStringA("NoiseBlankerLevelChanged = 12 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::NoiseReductionLevelChanged: //NoiseReductionLevelChanged = 13
+#ifdef DEBUG
+		OutputDebugStringA("NoiseReductionLevelChanged = 13 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::CwPeakFilterThresholdChanged: //CwPeakFilterThresholdChanged = 14
+#ifdef DEBUG
+		OutputDebugStringA("CwPeakFilterThresholdChanged = 14 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::FmNoiseReductionEnabledChanged: //FmNoiseReductionEnabledChanged = 15
+#ifdef DEBUG
+		OutputDebugStringA("FmNoiseReductionEnabledChanged = 15 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::FmNoiseReductionThresholdChanged: //FmNoiseReductionThresholdChanged = 16
+#ifdef DEBUG
+		OutputDebugStringA("FmNoiseReductionThresholdChanged = 16 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::WfmDeemphasisModeChanged: //WfmDeemphasisModeChanged = 17
+#ifdef DEBUG
+		OutputDebugStringA("WfmDeemphasisModeChanged = 17 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::AudioVolumeChanged: //AudioVolumeChanged = 18
+#ifdef DEBUG
+		OutputDebugStringA("AudioVolumeChanged = 18 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::AudioMuteChanged: //AudioMuteChanged = 19
+#ifdef DEBUG
+		OutputDebugStringA("AudioMuteChanged = 19 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::IFGainChanged: //IFGainChanged = 20
+#ifdef DEBUG
+		OutputDebugStringA("IFGainChanged = 20 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::SavingWorkspace: //SavingWorkspace = 21
+#ifdef DEBUG
+		OutputDebugStringA("SavingWorkspace = 21 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::VRXCountChanged: //VRXCountChanged = 22
+#ifdef DEBUG
+		OutputDebugStringA("VRXCountChanged = 22 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::VRXStateChanged: //VRXStateChanged = 23
+#ifdef DEBUG
+		OutputDebugStringA("VRXStateChanged = 23 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::StepSizeChanged: //StepSizeChanged = 24
+#ifdef DEBUG
+		OutputDebugStringA("SavingWorkspace = 21 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::VFOChanged: //VFOChanged = 25
+#ifdef DEBUG
+		OutputDebugStringA("VFOChanged = 25 \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::ClosingDown: //ClosingDown = 26
+#ifdef DEBUG
+		OutputDebugStringA("ClosingDown = 26 \r\n");
 		FormClosed();
+#endif DEBUG
+		break;
+
+	case UnoEvent::SP1MinFreqChanged: //SP1MinFreqChanged = 27
+#ifdef DEBUG
+		OutputDebugStringA("SP1MinFreqChanged = 27 \r\n");
+#endif DEBUG
+		m_parent.UpdateFrequencies();
+		break;
+
+	case UnoEvent::SP1MaxFreqChanged: //SP1MaxFreqChanged = 28
+#ifdef DEBUG
+		OutputDebugStringA("SP1MaxFreqChanged = 28 \r\n");
+		m_parent.UpdateFrequencies();
+#endif DEBUG
+		break;
+
+	case UnoEvent::BiasTEnableChanged: //BiasTEnableChanged = 29
+#ifdef DEBUG
+		OutputDebugStringA("BiasTEnableChanged \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::SP1MinPowerChanged: //SP1MinPowerChanged = 30
+#ifdef DEBUG
+		OutputDebugStringA("SP1MinPowerChanged \r\n");
+#endif DEBUG
+		break;
+
+	case UnoEvent::SP1MaxPowerChanged: //SP1MaxPowerChanged = 31
+#ifdef DEBUG
+		OutputDebugStringA("SP1MaxPowerChanged \r\n");
+#endif DEBUG
 		break;
 
 	default:
+#ifdef DEBUG
+		OutputDebugStringA("Default event case \r\n");
+#endif DEBUG
 		break;
 	}
 }

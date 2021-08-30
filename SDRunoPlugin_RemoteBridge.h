@@ -31,9 +31,8 @@ public:
 
 	void UpdateSampleRate();
 	//controller
-	void UpdateCenterFrequency();
-	void UpdateSP1MinFreq();
-	void UpdateSP1MaxFreq();
+	void UpdateFrequencies();
+
 	//@todo: process me
 	/*
 	Lots of handlers for events
@@ -77,17 +76,17 @@ public:
 		int8_t      CwPeakFilterThreshold	= 0;
 		int         AudioVolume				= 0; //220 is max of the bar value
 		int8_t      SP1MinPower				= 0;
-		uint32_t    VfoFrequency			= 0; //VFO Freq,                Hz
-		uint32_t    CenterFrequency			= 0;
-		uint32_t    SP1MaxFrequency			= 0;
+		uint32_t	VfoFrequency			= 0; //VFO Freq,                Hz
+		uint32_t	CenterFrequency			= 0;
+		uint32_t	SP1MaxFrequency			= 0;
 		uint32_t	SP1MinFrequency			= 0;
 		long int    MPXLevel				= 0;
 		int         FilterBandwidth			= 0; //Filter bandwith,         Hz
 		int         SquelchLevel			= 0; //220 is max of the bar value
-		bool        SquelchEnable			= false;
-		bool        FmNoiseReductionEnable	= false;
-		bool        AudioMute				= false;
-		bool        BiasTEnable				= false;
+		int         SquelchEnable			= 0; //boolean val
+		int         FmNoiseReductionEnable	= 0; //boolean val
+		int         AudioMute				= 0; //boolean val
+		int         BiasTEnable				= 0; //boolean val
 		long int    fingerprint;
 	} state;
 
@@ -102,7 +101,7 @@ private:
 	std::string cPort;
 	std::string error;
 	SDRunoPlugin_RemoteBridgeUi m_form;
-	int sampleRate;
+	double sampleRate;
 
 
 };
